@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { usePrototypeStore, ConnectionStatus } from '@/lib/prototype-store';
 import {
   Users,
@@ -15,6 +15,7 @@ import {
   Check,
   Info,
   AlertTriangle,
+  X,
 } from 'lucide-react';
 
 function MaxIcon({ status }: { status: ConnectionStatus }) {
@@ -105,6 +106,46 @@ function StatusIndicator({ status }: { status: ConnectionStatus }) {
   return null;
 }
 
+/* ─── Confirmation Dialog ─────────────────────────────────── */
+
+function ConfirmDialog({
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <div className="relative bg-white rounded-xl shadow-xl p-5 w-[360px] space-y-4 animate-slide-in">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-500" />
+          </div>
+          <p className="text-sm font-medium text-gray-900">{message}</p>
+        </div>
+        <div className="flex items-center gap-2 justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
+          >
+            Удалить
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RecipientsSection() {
   const {
     scenario,
@@ -113,6 +154,7 @@ export function RecipientsSection() {
     editRecipient,
     editRecipientWithTab,
     deleteRecipient,
+    deleteRecipients,
     openActivationPopup,
     setRecipientSearch,
   } = usePrototypeStore();
@@ -126,6 +168,54 @@ export function RecipientsSection() {
 
   const allActive = recipients.length > 0 && recipients.every((r) => r.maxStatus === 'active' && r.telegramStatus === 'active');
   const anyWaiting = recipients.some((r) => r.maxStatus === 'waiting' || r.telegramStatus === 'waiting');
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Confirmation state
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+
+  const filteredRecipients = recipients.filter((r) =>
+    r.name.toLowerCase().includes(scenario.recipientSearchQuery.toLowerCase())
+  );
+
+  const allFilteredSelected = filteredRecipients.length > 0 && filteredRecipients.every((r) => selectedIds.has(r.id));
+
+  const toggleSelectAll = useCallback(() => {
+    if (allFilteredSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredRecipients.map((r) => r.id)));
+    }
+  }, [allFilteredSelected, filteredRecipients]);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSingleDelete = () => {
+    if (!confirmDeleteId) return;
+    deleteRecipient(confirmDeleteId);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(confirmDeleteId);
+      return next;
+    });
+    setConfirmDeleteId(null);
+  };
+
+  const handleBulkDelete = () => {
+    const ids = Array.from(selectedIds);
+    deleteRecipients(ids);
+    setSelectedIds(new Set());
+    setConfirmBulkDelete(false);
+  };
 
   return (
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden transition-opacity ${isDisabled ? 'opacity-60' : ''}`}>
@@ -222,15 +312,55 @@ export function RecipientsSection() {
                 </div>
               )}
 
+              {/* Bulk actions bar */}
+              {selectedIds.size > 0 && (
+                <div className="mx-4 mt-2 mb-2 flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className="text-xs font-medium text-gray-700">
+                    Выбрано: {selectedIds.size}
+                  </span>
+                  <div className="flex-1" />
+                  <button
+                    onClick={() => setSelectedIds(new Set())}
+                    className="text-[11px] text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    Снять
+                  </button>
+                  <button
+                    onClick={() => setConfirmBulkDelete(true)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Удалить
+                  </button>
+                </div>
+              )}
+
+              {/* Select all row */}
+              <div className="px-4 pt-1 pb-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAll}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-amber-400 focus:ring-amber-400"
+                  />
+                  <span className="text-[11px] text-gray-500 font-medium">
+                    Выбрать всех
+                  </span>
+                </label>
+              </div>
+
               {/* Recipient Rows */}
               <div className="px-4 pb-2">
                 {recipients.map((recipient) => (
                   <RecipientRow
                     key={recipient.id}
                     recipient={recipient}
+                    isSelected={selectedIds.has(recipient.id)}
+                    onSelect={() => toggleSelect(recipient.id)}
                     onEdit={editRecipient}
                     onEditWithTab={editRecipientWithTab}
-                    onDelete={deleteRecipient}
+                    onDelete={() => setConfirmDeleteId(recipient.id)}
                     onActivate={openActivationPopup}
                   />
                 ))}
@@ -249,12 +379,30 @@ export function RecipientsSection() {
           )}
         </div>
       )}
+
+      {/* Confirmation Dialogs */}
+      {confirmDeleteId && (
+        <ConfirmDialog
+          message={`Удалить получателя «${recipients.find(r => r.id === confirmDeleteId)?.name}»?`}
+          onConfirm={handleSingleDelete}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
+      )}
+      {confirmBulkDelete && (
+        <ConfirmDialog
+          message={`Удалить ${selectedIds.size} ${selectedIds.size === 1 ? 'получателя' : selectedIds.size < 5 ? 'получателя' : 'получателей'}?`}
+          onConfirm={handleBulkDelete}
+          onCancel={() => setConfirmBulkDelete(false)}
+        />
+      )}
     </div>
   );
 }
 
 function RecipientRow({
   recipient,
+  isSelected,
+  onSelect,
   onEdit,
   onEditWithTab,
   onDelete,
@@ -271,9 +419,11 @@ function RecipientRow({
     telegramLink: string;
     telegramAccount: string;
   };
+  isSelected: boolean;
+  onSelect: () => void;
   onEdit: (id: string) => void;
   onEditWithTab: (id: string, tab: 'max' | 'telegram' | 'email') => void;
-  onDelete: (id: string) => void;
+  onDelete: () => void;
   onActivate: (id: string, channel: 'max' | 'telegram') => void;
 }) {
   // Determine overall status indicator from max + telegram
@@ -282,8 +432,18 @@ function RecipientRow({
   const overallStatus: ConnectionStatus = hasAnyActive ? 'active' : hasAnyWaiting ? 'waiting' : 'not_configured';
 
   return (
-    <div className="py-2.5 border-b border-gray-50 last:border-b-0">
+    <div className={`py-2.5 border-b border-gray-50 last:border-b-0 ${isSelected ? 'bg-amber-50/50 rounded-lg' : ''}`}>
       <div className="flex items-start gap-2.5">
+        {/* Checkbox */}
+        <div className="pt-1.5 flex-shrink-0">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onSelect}
+            className="w-3.5 h-3.5 rounded border-gray-300 text-amber-400 focus:ring-amber-400"
+          />
+        </div>
+
         {/* Avatar placeholder */}
         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
           hasAnyActive ? 'bg-green-50' : 'bg-gray-100'
@@ -426,7 +586,7 @@ function RecipientRow({
               <Settings className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => onDelete(recipient.id)}
+              onClick={onDelete}
               className="p-1 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />

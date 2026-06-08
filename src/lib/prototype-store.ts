@@ -161,6 +161,7 @@ interface PrototypeStore {
   editRecipient: (id: string) => void;
   editRecipientWithTab: (id: string, tab: ChannelTab) => void;
   deleteRecipient: (id: string) => void;
+  deleteRecipients: (ids: string[]) => void;
 
   // Activation popup
   openActivationPopup: (recipientId: string, channel: 'max' | 'telegram') => void;
@@ -844,6 +845,17 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     scenarios: s.scenarios.map(sc =>
       sc.id === s.activeScenarioId
         ? { ...sc, recipientCount: Math.max(0, sc.recipientCount - 1) }
+        : sc
+    ),
+  })),
+  deleteRecipients: (ids) => set((s) => ({
+    scenario: {
+      ...s.scenario,
+      recipients: s.scenario.recipients.filter(r => !ids.includes(r.id)),
+    },
+    scenarios: s.scenarios.map(sc =>
+      sc.id === s.activeScenarioId
+        ? { ...sc, recipientCount: Math.max(0, sc.recipientCount - ids.length) }
         : sc
     ),
   })),
