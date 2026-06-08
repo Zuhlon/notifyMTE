@@ -213,7 +213,7 @@ const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 50 }, (_, i) => ({
     const mid = String(100 + ((i * 37 + 13) % 900)).slice(0, 3);
     const end1 = String(10 + ((i * 53 + 7) % 90));
     const end2 = String(10 + ((i * 71 + 3) % 90));
-    return `+7 (${prefix}) ${mid}-${end1}-${end2}`;
+    return `${prefix} ${mid}-${end1}-${end2}`;
   })(),
   sip: `SIP02RBTU${String(i + 1).padStart(4, '0')}L5`,
   name: [
@@ -233,7 +233,7 @@ const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 50 }, (_, i) => ({
 
 const MOCK_MULTI_CHANNEL: SelectableItem[] = Array.from({ length: 12 }, (_, i) => ({
   id: `mc-${i + 1}`,
-  code: `+7 (495) ${String(100 + i * 15).slice(0, 3)}-${String(10 + i * 7).padStart(2, '0')}-${String(20 + i * 3).padStart(2, '0')}`,
+  code: `495 ${String(100 + i * 15).slice(0, 3)}-${String(10 + i * 7).padStart(2, '0')}-${String(20 + i * 3).padStart(2, '0')}`,
   name: `Многоканальный номер ${i + 1}`,
   selected: false,
 }));
