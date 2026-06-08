@@ -136,7 +136,7 @@ export function ActivationPopup() {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-amber-400 text-gray-900 hover:bg-amber-500 transition-colors"
             >
               <Check className="w-4 h-4" />
-              Подтвердить подключение
+              Подтвердить подключение (для имитации действий получателя)
             </button>
           </div>
         </div>
