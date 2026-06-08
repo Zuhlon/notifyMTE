@@ -80,7 +80,7 @@ export function CJTracker() {
             onClick={toggleCJCollapsed}
           >
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-700">Ваши эмоции важны — помогите сделать продукт лучше</span>
+              <span className="text-xs font-semibold text-gray-700">Оцените каждый шаг — нам важно ваше мнение</span>
             </div>
             <div className="flex items-center gap-2">
               <button
