@@ -146,14 +146,28 @@ interface PrototypeStore {
   closeAll: () => void;
 }
 
-const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
-  employee_numbers: 'номеров сотрудников',
-  multi_channel: 'многоканальных номеров',
-  departments: 'отделов',
-  call_centers: 'колл-центров',
+function pluralize(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+
+const SOURCE_TYPE_LABELS: Record<SourceType, { one: string; few: string; many: string }> = {
+  employee_numbers: { one: 'номер сотрудника', few: 'номера сотрудников', many: 'номеров сотрудников' },
+  multi_channel: { one: 'многоканальный номер', few: 'многоканальных номера', many: 'многоканальных номеров' },
+  departments: { one: 'отдел', few: 'отдела', many: 'отделов' },
+  call_centers: { one: 'колл-центр', few: 'колл-центра', many: 'колл-центров' },
 };
 
-export { SOURCE_TYPE_LABELS };
+function getSourceLabel(type: SourceType, count: number): string {
+  const labels = SOURCE_TYPE_LABELS[type];
+  return pluralize(count, labels.one, labels.few, labels.many);
+}
+
+export { SOURCE_TYPE_LABELS, getSourceLabel };
 
 const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 50 }, (_, i) => ({
   id: `emp-${i + 1}`,
@@ -201,11 +215,11 @@ const MOCK_CALL_CENTERS: SelectableItem[] = [
   { id: 'cc-5', code: '305', name: 'Колл-центр "VIP"', selected: false },
 ];
 
-function createDefaultScenario(id: string, name: string): Scenario {
+function createDefaultScenario(id: string, name: string, sourceType: SourceType = 'employee_numbers'): Scenario {
   return {
     id,
     name,
-    sourceType: 'employee_numbers',
+    sourceType,
     isSourceCollapsed: false,
     isNumbersSaved: false,
     isRecipientsExpanded: false,
@@ -264,7 +278,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     let newScenario = updatedStates[id];
     if (!newScenario) {
       const listItem = state.scenarios.find(s => s.id === id);
-      newScenario = createDefaultScenario(id, listItem?.name || 'Новый');
+      newScenario = createDefaultScenario(id, listItem?.name || 'Новый', listItem?.sourceType || 'employee_numbers');
     }
     set({
       activeScenarioId: id,
@@ -275,7 +289,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   addScenario: () => {
     const state = get();
     const newId = `scenario-${Date.now()}`;
-    const newScenario = createDefaultScenario(newId, 'Новый сценарий');
+    const newScenario = createDefaultScenario(newId, 'Новый сценарий', 'employee_numbers');
     const newListItem: ScenarioListItem = {
       id: newId,
       name: 'Новый сценарий',

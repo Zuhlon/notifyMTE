@@ -1,14 +1,12 @@
 'use client';
 
 import React from 'react';
-import { usePrototypeStore, SOURCE_TYPE_LABELS } from '@/lib/prototype-store';
+import { usePrototypeStore, getSourceLabel } from '@/lib/prototype-store';
 import {
   Plus,
-  Pencil,
   Trash2,
   Phone,
   Users,
-  AlertCircle,
 } from 'lucide-react';
 
 export function ScenarioSidebar() {
@@ -64,7 +62,7 @@ export function ScenarioSidebar() {
                 <Phone className="w-3 h-3" />
                 <span>
                   {sc.selectedCount > 0
-                    ? `для ${sc.selectedCount} ${SOURCE_TYPE_LABELS[sc.sourceType]}`
+                    ? `для ${sc.selectedCount} ${getSourceLabel(sc.sourceType, sc.selectedCount)}`
                     : `не настроено`
                   }
                 </span>

@@ -12,12 +12,9 @@ import {
   Trash2,
   MessageSquare,
   Mail,
-  Copy,
   Check,
-  ExternalLink,
   Info,
-  AlertCircle,
-  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 
 function StatusBadge({ status }: { status: ConnectionStatus }) {
@@ -202,6 +199,16 @@ export function RecipientsSection() {
                 </button>
               </div>
 
+              {/* Inline Warning Banner - moved to top */}
+              {anyWaiting && (
+                <div className="mx-4 mt-2 mb-2 flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    Некоторые получатели не получают уведомления. Отправьте ссылку для активации
+                  </p>
+                </div>
+              )}
+
               {/* Recipient Rows */}
               <div className="px-4 pb-2">
                 {recipients.map((recipient) => (
@@ -215,26 +222,15 @@ export function RecipientsSection() {
                 ))}
               </div>
 
-              {/* Status Bar */}
-              <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-3 flex-wrap">
-                {allActive ? (
+              {/* Status Bar - only shows success indicator */}
+              {allActive && (
+                <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-3">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 rounded-lg text-[11px] font-medium border border-green-200">
                     <Check className="w-3.5 h-3.5" />
                     Уведомления отправляются
                   </div>
-                ) : anyWaiting ? (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg text-[11px] font-medium border border-amber-200">
-                    <Info className="w-3.5 h-3.5" />
-                    Уведомления не отправляются
-                  </div>
-                ) : null}
-                {anyWaiting && (
-                  <div className="flex items-center gap-1.5 text-[11px] text-amber-600">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Отправьте пользователю ссылку для активации
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </>
           )}
         </div>
