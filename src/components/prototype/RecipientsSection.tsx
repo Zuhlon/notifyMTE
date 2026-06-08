@@ -17,29 +17,6 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-function StatusBadge({ status }: { status: ConnectionStatus }) {
-  switch (status) {
-    case 'not_configured':
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-500">
-          не настроен
-        </span>
-      );
-    case 'waiting':
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700 cursor-pointer hover:bg-amber-200 transition-colors">
-          ожидает
-        </span>
-      );
-    case 'active':
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-700">
-          Подключен
-        </span>
-      );
-  }
-}
-
 function MaxIcon({ status }: { status: ConnectionStatus }) {
   return (
     <div className="relative">
@@ -63,6 +40,41 @@ function MaxIcon({ status }: { status: ConnectionStatus }) {
         )}
         {status === 'waiting' && (
           <span className="text-xs text-amber-600 font-medium">Ожидает</span>
+        )}
+        {status === 'not_configured' && (
+          <span className="text-xs text-gray-400">не настроен</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TelegramIcon({ status }: { status: ConnectionStatus }) {
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-1">
+        <div
+          className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${
+            status === 'active'
+              ? 'bg-blue-500 text-white'
+              : status === 'waiting'
+              ? 'bg-blue-100 text-blue-500'
+              : 'bg-gray-100 text-gray-400'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+        </div>
+        {status === 'active' && (
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-green-600 font-medium">Подключен</span>
+            <Check className="w-3.5 h-3.5 text-green-600" />
+          </div>
+        )}
+        {status === 'waiting' && (
+          <span className="text-xs text-amber-600 font-medium">Ожидает</span>
+        )}
+        {status === 'not_configured' && (
+          <span className="text-xs text-gray-400">не настроен</span>
         )}
       </div>
     </div>
@@ -112,8 +124,8 @@ export function RecipientsSection() {
   // Always render, but disable when no numbers saved
   const isDisabled = !isNumbersSaved;
 
-  const allActive = recipients.length > 0 && recipients.every((r) => r.maxStatus === 'active');
-  const anyWaiting = recipients.some((r) => r.maxStatus === 'waiting');
+  const allActive = recipients.length > 0 && recipients.every((r) => r.maxStatus === 'active' && r.telegramStatus === 'active');
+  const anyWaiting = recipients.some((r) => r.maxStatus === 'waiting' || r.telegramStatus === 'waiting');
 
   return (
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden transition-opacity ${isDisabled ? 'opacity-60' : ''}`}>
@@ -256,21 +268,28 @@ function RecipientRow({
     telegramStatus: ConnectionStatus;
     emailStatus: ConnectionStatus;
     maxLink: string;
+    telegramLink: string;
+    telegramAccount: string;
   };
   onEdit: (id: string) => void;
-  onEditWithTab: (id: string, tab: 'telegram' | 'email') => void;
+  onEditWithTab: (id: string, tab: 'max' | 'telegram' | 'email') => void;
   onDelete: (id: string) => void;
-  onActivate: (id: string) => void;
+  onActivate: (id: string, channel: 'max' | 'telegram') => void;
 }) {
+  // Determine overall status indicator from max + telegram
+  const hasAnyActive = recipient.maxStatus === 'active' || recipient.telegramStatus === 'active';
+  const hasAnyWaiting = recipient.maxStatus === 'waiting' || recipient.telegramStatus === 'waiting';
+  const overallStatus: ConnectionStatus = hasAnyActive ? 'active' : hasAnyWaiting ? 'waiting' : 'not_configured';
+
   return (
     <div className="py-2.5 border-b border-gray-50 last:border-b-0">
       <div className="flex items-start gap-2.5">
         {/* Avatar placeholder */}
         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-          recipient.maxStatus === 'active' ? 'bg-green-50' : 'bg-gray-100'
+          hasAnyActive ? 'bg-green-50' : 'bg-gray-100'
         }`}>
           <span className={`text-xs font-medium ${
-            recipient.maxStatus === 'active' ? 'text-green-700' : 'text-gray-600'
+            hasAnyActive ? 'text-green-700' : 'text-gray-600'
           }`}>
             {recipient.name.charAt(0)}
           </span>
@@ -280,7 +299,7 @@ function RecipientRow({
           {/* Name & Position */}
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-gray-900">{recipient.name}</span>
-            <StatusIndicator status={recipient.maxStatus} />
+            <StatusIndicator status={overallStatus} />
             {recipient.position && (
               <span className="text-[11px] text-gray-500 truncate">— {recipient.position}</span>
             )}
@@ -288,12 +307,12 @@ function RecipientRow({
 
           {/* Channels */}
           <div className="flex items-center gap-3">
-            {/* MAX Channel - clickable if waiting */}
+            {/* MAX Channel - clickable if waiting or not_configured */}
             <div className="relative group">
               <button
                 onClick={() => {
                   if (recipient.maxStatus === 'waiting') {
-                    onActivate(recipient.id);
+                    onActivate(recipient.id, 'max');
                   } else if (recipient.maxStatus === 'not_configured') {
                     onEdit(recipient.id);
                   }
@@ -326,27 +345,54 @@ function RecipientRow({
                   </p>
                 </div>
               )}
+              {recipient.maxStatus === 'not_configured' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-44">
+                  <p className="font-medium mb-1">МАКС: не настроен</p>
+                  <p className="text-gray-300">Нажмите для настройки МАКС</p>
+                </div>
+              )}
             </div>
 
-            {/* Telegram - clickable when not configured */}
+            {/* Telegram Channel - clickable if waiting or not_configured */}
             <div className="relative group">
               <button
                 onClick={() => {
-                  if (recipient.telegramStatus === 'not_configured') {
+                  if (recipient.telegramStatus === 'waiting') {
+                    onActivate(recipient.id, 'telegram');
+                  } else if (recipient.telegramStatus === 'not_configured') {
                     onEditWithTab(recipient.id, 'telegram');
                   }
                 }}
-                className={`flex items-center gap-1.5 transition-all rounded px-1.5 py-0.5 ${
-                  recipient.telegramStatus === 'not_configured'
-                    ? 'opacity-50 hover:opacity-80 cursor-pointer ring-1 ring-gray-200 hover:ring-gray-300'
+                className={`flex items-center gap-1.5 transition-all ${
+                  recipient.telegramStatus === 'waiting'
+                    ? 'cursor-pointer hover:opacity-80 ring-1 ring-amber-300 rounded px-1.5 py-0.5'
+                    : recipient.telegramStatus === 'not_configured'
+                    ? 'cursor-pointer hover:opacity-80 ring-1 ring-gray-200 rounded px-1.5 py-0.5 opacity-60 hover:opacity-80'
+                    : recipient.telegramStatus === 'active'
+                    ? ''
                     : 'opacity-40'
                 }`}
               >
-                <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-100">
-                  <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-                </div>
-                <span className="text-[11px] text-gray-400">не настроен</span>
+                <TelegramIcon status={recipient.telegramStatus} />
               </button>
+              {/* Tooltip */}
+              {recipient.telegramStatus === 'waiting' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-52">
+                  <p className="font-medium mb-1">Telegram: Ожидает</p>
+                  <p className="text-gray-300 leading-relaxed">
+                    Получатель ещё не перешёл по ссылке для активации подписки в Telegram.
+                    Нажмите, чтобы промоделировать подключение.
+                  </p>
+                </div>
+              )}
+              {recipient.telegramStatus === 'active' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-52">
+                  <p className="font-medium mb-1">Telegram: Подключен</p>
+                  <p className="text-gray-300 leading-relaxed">
+                    Получатель подтвердил подписку. Уведомления будут доставляться через Telegram.
+                  </p>
+                </div>
+              )}
               {recipient.telegramStatus === 'not_configured' && (
                 <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-44">
                   <p className="font-medium mb-1">Telegram: не настроен</p>

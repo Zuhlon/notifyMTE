@@ -29,6 +29,8 @@ export interface Recipient {
   telegramStatus: ConnectionStatus;
   emailStatus: ConnectionStatus;
   maxLink: string;
+  telegramAccount: string;
+  telegramLink: string;
   activeTab: ChannelTab;
 }
 
@@ -53,6 +55,7 @@ export interface Scenario {
 
 interface ModalState {
   isOpen: boolean;
+  editingRecipientId: string | null;
   recipientName: string;
   recipientPosition: string;
   activeTab: ChannelTab;
@@ -61,13 +64,18 @@ interface ModalState {
   isPhoneValid: boolean;
   generatedLink: string;
   isSaving: boolean;
+  telegramAccount: string;
+  isTelegramLinkGenerated: boolean;
+  generatedTelegramLink: string;
+  isTelegramInputValid: boolean;
 }
 
 interface ActivationPopup {
   visible: boolean;
+  channel: 'max' | 'telegram';
   recipientId: string;
   recipientName: string;
-  maxLink: string;
+  link: string;
 }
 
 interface ScenarioListItem {
@@ -122,6 +130,8 @@ interface PrototypeStore {
   setModalPhone: (phone: string) => void;
   generateMaxLink: () => void;
   copyMaxLink: () => void;
+  setModalTelegramAccount: (account: string) => void;
+  generateTelegramLink: () => void;
   saveRecipient: () => void;
   resetModal: () => void;
 
@@ -131,7 +141,7 @@ interface PrototypeStore {
   deleteRecipient: (id: string) => void;
 
   // Activation popup
-  openActivationPopup: (recipientId: string) => void;
+  openActivationPopup: (recipientId: string, channel: 'max' | 'telegram') => void;
   closeActivationPopup: () => void;
   confirmActivation: () => void;
 
@@ -252,6 +262,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   scenarioStates: { 'scenario-3': initialScenario },
   modal: {
     isOpen: false,
+    editingRecipientId: null,
     recipientName: '',
     recipientPosition: '',
     activeTab: 'max',
@@ -260,12 +271,17 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     isPhoneValid: false,
     generatedLink: '',
     isSaving: false,
+    telegramAccount: '',
+    isTelegramLinkGenerated: false,
+    generatedTelegramLink: '',
+    isTelegramInputValid: false,
   },
   activationPopup: {
     visible: false,
+    channel: 'max',
     recipientId: '',
     recipientName: '',
-    maxLink: '',
+    link: '',
   },
   toast: { message: '', visible: false },
 
@@ -454,6 +470,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   openAddRecipientModal: () => set({
     modal: {
       isOpen: true,
+      editingRecipientId: null,
       recipientName: '',
       recipientPosition: '',
       activeTab: 'max',
@@ -462,11 +479,16 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isPhoneValid: false,
       generatedLink: '',
       isSaving: false,
+      telegramAccount: '',
+      isTelegramLinkGenerated: false,
+      generatedTelegramLink: '',
+      isTelegramInputValid: false,
     },
   }),
   closeRecipientModal: () => set({
     modal: {
       isOpen: false,
+      editingRecipientId: null,
       recipientName: '',
       recipientPosition: '',
       activeTab: 'max',
@@ -475,6 +497,10 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isPhoneValid: false,
       generatedLink: '',
       isSaving: false,
+      telegramAccount: '',
+      isTelegramLinkGenerated: false,
+      generatedTelegramLink: '',
+      isTelegramInputValid: false,
     },
   }),
   setModalRecipientName: (name) => set((s) => ({
@@ -484,7 +510,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     modal: { ...s.modal, recipientPosition: position },
   })),
   setModalActiveTab: (tab) => set((s) => ({
-    modal: { ...s.modal, activeTab: tab, isLinkGenerated: false },
+    modal: { ...s.modal, activeTab: tab, isLinkGenerated: false, isTelegramLinkGenerated: false },
   })),
   setModalPhone: (phone) => {
     const cleaned = phone.replace(/\D/g, '');
@@ -511,6 +537,21 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       setTimeout(() => set({ toast: { message: '', visible: false } }), 2000);
     }
   },
+  setModalTelegramAccount: (account) => {
+    const isValid = account.trim().length > 0;
+    set((s) => ({
+      modal: { ...s.modal, telegramAccount: account, isTelegramInputValid: isValid },
+    }));
+  },
+  generateTelegramLink: () => {
+    const state = get();
+    if (!state.modal.isTelegramInputValid) return;
+    // Same link for all recipients
+    const link = 'https://t.me/mte_notify_bot?start=link_a1b2c3d4';
+    set((s) => ({
+      modal: { ...s.modal, isTelegramLinkGenerated: true, generatedTelegramLink: link },
+    }));
+  },
   saveRecipient: () => {
     const state = get();
     if (!state.modal.recipientName.trim()) {
@@ -518,41 +559,83 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       setTimeout(() => set({ toast: { message: '', visible: false } }), 2000);
       return;
     }
-    const newRecipient: Recipient = {
-      id: `recipient-${Date.now()}`,
-      name: state.modal.recipientName,
-      position: state.modal.recipientPosition,
-      phone: state.modal.phone,
-      maxStatus: state.modal.isLinkGenerated ? 'waiting' : 'not_configured',
-      telegramStatus: 'not_configured',
-      emailStatus: 'not_configured',
-      maxLink: state.modal.generatedLink,
-      activeTab: state.modal.activeTab,
+
+    const isEditing = !!state.modal.editingRecipientId;
+    const resetModal = {
+      isOpen: false,
+      editingRecipientId: null,
+      recipientName: '',
+      recipientPosition: '',
+      activeTab: 'max' as ChannelTab,
+      phone: '',
+      isLinkGenerated: false,
+      isPhoneValid: false,
+      generatedLink: '',
+      isSaving: false,
+      telegramAccount: '',
+      isTelegramLinkGenerated: false,
+      generatedTelegramLink: '',
+      isTelegramInputValid: false,
     };
-    set((s) => ({
-      scenario: {
-        ...s.scenario,
-        recipients: [...s.scenario.recipients, newRecipient],
-        isScenarioSaved: true,
-        showSavedNotification: true,
-      },
-      scenarios: s.scenarios.map(sc =>
-        sc.id === s.activeScenarioId
-          ? { ...sc, recipientCount: s.scenario.recipients.length + 1 }
-          : sc
-      ),
-      modal: {
-        isOpen: false,
-        recipientName: '',
-        recipientPosition: '',
-        activeTab: 'max',
-        phone: '',
-        isLinkGenerated: false,
-        isPhoneValid: false,
-        generatedLink: '',
-        isSaving: false,
-      },
-    }));
+
+    if (isEditing) {
+      // Update existing recipient — preserve channel statuses that are already 'active'
+      set((s) => ({
+        scenario: {
+          ...s.scenario,
+          recipients: s.scenario.recipients.map(r => {
+            if (r.id !== state.modal.editingRecipientId) return r;
+            return {
+              ...r,
+              name: state.modal.recipientName,
+              position: state.modal.recipientPosition,
+              phone: state.modal.phone,
+              // Preserve 'active' statuses; only update from modal if not already active
+              maxStatus: r.maxStatus === 'active' ? 'active' as ConnectionStatus
+                : (state.modal.isLinkGenerated ? 'waiting' as ConnectionStatus : 'not_configured' as ConnectionStatus),
+              telegramStatus: r.telegramStatus === 'active' ? 'active' as ConnectionStatus
+                : (state.modal.isTelegramLinkGenerated ? 'waiting' as ConnectionStatus : 'not_configured' as ConnectionStatus),
+              maxLink: state.modal.generatedLink || r.maxLink,
+              telegramAccount: state.modal.telegramAccount || r.telegramAccount,
+              telegramLink: state.modal.generatedTelegramLink || r.telegramLink,
+              activeTab: state.modal.activeTab,
+            };
+          }),
+          isScenarioSaved: true,
+          showSavedNotification: true,
+        },
+        modal: resetModal,
+      }));
+    } else {
+      // Create new recipient
+      const newRecipient: Recipient = {
+        id: `recipient-${Date.now()}`,
+        name: state.modal.recipientName,
+        position: state.modal.recipientPosition,
+        phone: state.modal.phone,
+        maxStatus: (state.modal.isLinkGenerated ? 'waiting' : 'not_configured') as ConnectionStatus,
+        telegramStatus: (state.modal.isTelegramLinkGenerated ? 'waiting' : 'not_configured') as ConnectionStatus,
+        emailStatus: 'not_configured' as ConnectionStatus,
+        maxLink: state.modal.generatedLink,
+        telegramAccount: state.modal.telegramAccount,
+        telegramLink: state.modal.generatedTelegramLink,
+        activeTab: state.modal.activeTab,
+      };
+      set((s) => ({
+        scenario: {
+          ...s.scenario,
+          recipients: [...s.scenario.recipients, newRecipient],
+          isScenarioSaved: true,
+          showSavedNotification: true,
+        },
+        scenarios: s.scenarios.map(sc =>
+          sc.id === s.activeScenarioId
+            ? { ...sc, recipientCount: s.scenario.recipients.length + 1 }
+            : sc
+        ),
+        modal: resetModal,
+      }));
+    }
     setTimeout(() => set((s) => ({
       scenario: { ...s.scenario, showSavedNotification: false },
     })), 3000);
@@ -560,6 +643,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   resetModal: () => set({
     modal: {
       isOpen: false,
+      editingRecipientId: null,
       recipientName: '',
       recipientPosition: '',
       activeTab: 'max',
@@ -568,6 +652,10 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isPhoneValid: false,
       generatedLink: '',
       isSaving: false,
+      telegramAccount: '',
+      isTelegramLinkGenerated: false,
+      generatedTelegramLink: '',
+      isTelegramInputValid: false,
     },
   }),
 
@@ -579,6 +667,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       set({
         modal: {
           isOpen: true,
+          editingRecipientId: id,
           recipientName: recipient.name,
           recipientPosition: recipient.position,
           activeTab: recipient.activeTab,
@@ -587,6 +676,10 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
           isPhoneValid: recipient.phone.length > 0,
           generatedLink: recipient.maxLink,
           isSaving: false,
+          telegramAccount: recipient.telegramAccount,
+          isTelegramLinkGenerated: !!recipient.telegramLink,
+          generatedTelegramLink: recipient.telegramLink,
+          isTelegramInputValid: recipient.telegramAccount.length > 0,
         },
       });
     }
@@ -598,14 +691,19 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       set({
         modal: {
           isOpen: true,
+          editingRecipientId: id,
           recipientName: recipient.name,
           recipientPosition: recipient.position,
           activeTab: tab,
           phone: recipient.phone,
-          isLinkGenerated: tab === 'max' ? !!recipient.maxLink : false,
+          isLinkGenerated: tab === 'max' ? !!recipient.maxLink : !!recipient.maxLink,
           isPhoneValid: recipient.phone.length > 0,
           generatedLink: recipient.maxLink,
           isSaving: false,
+          telegramAccount: recipient.telegramAccount,
+          isTelegramLinkGenerated: tab === 'telegram' ? !!recipient.telegramLink : !!recipient.telegramLink,
+          generatedTelegramLink: recipient.telegramLink,
+          isTelegramInputValid: recipient.telegramAccount.length > 0,
         },
       });
     }
@@ -623,34 +721,49 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   })),
 
   // Activation popup
-  openActivationPopup: (recipientId) => {
+  openActivationPopup: (recipientId, channel) => {
     const state = get();
     const recipient = state.scenario.recipients.find(r => r.id === recipientId);
-    if (recipient && recipient.maxStatus === 'waiting') {
+    if (!recipient) return;
+    if (channel === 'max' && recipient.maxStatus === 'waiting') {
       set({
         activationPopup: {
           visible: true,
+          channel: 'max',
           recipientId: recipient.id,
           recipientName: recipient.name,
-          maxLink: recipient.maxLink,
+          link: recipient.maxLink,
+        },
+      });
+    } else if (channel === 'telegram' && recipient.telegramStatus === 'waiting') {
+      set({
+        activationPopup: {
+          visible: true,
+          channel: 'telegram',
+          recipientId: recipient.id,
+          recipientName: recipient.name,
+          link: recipient.telegramLink,
         },
       });
     }
   },
   closeActivationPopup: () => set({
-    activationPopup: { visible: false, recipientId: '', recipientName: '', maxLink: '' },
+    activationPopup: { visible: false, channel: 'max', recipientId: '', recipientName: '', link: '' },
   }),
   confirmActivation: () => {
     const state = get();
+    const channel = state.activationPopup.channel;
+    const updateField = channel === 'max' ? 'maxStatus' : 'telegramStatus';
+    const toastMsg = channel === 'max' ? 'МАКС успешно подключён' : 'Telegram успешно подключён';
     set((s) => ({
       scenario: {
         ...s.scenario,
         recipients: s.scenario.recipients.map(r =>
-          r.id === state.activationPopup.recipientId ? { ...r, maxStatus: 'active' as ConnectionStatus } : r
+          r.id === state.activationPopup.recipientId ? { ...r, [updateField]: 'active' as ConnectionStatus } : r
         ),
       },
-      activationPopup: { visible: false, recipientId: '', recipientName: '', maxLink: '' },
-      toast: { message: 'МАКС успешно подключён', visible: true },
+      activationPopup: { visible: false, channel: 'max', recipientId: '', recipientName: '', link: '' },
+      toast: { message: toastMsg, visible: true },
     }));
     setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
   },

@@ -8,6 +8,7 @@ import {
   Link as LinkIcon,
   Copy,
   MessageCircle,
+  MessageSquare,
 } from 'lucide-react';
 
 export function ActivationPopup() {
@@ -20,13 +21,17 @@ export function ActivationPopup() {
 
   if (!activationPopup.visible) return null;
 
+  const isMax = activationPopup.channel === 'max';
+  const channelLabel = isMax ? 'МАКС' : 'Telegram';
+  const ChannelIcon = isMax ? MessageCircle : MessageSquare;
+
   const handleConfirm = () => {
-    confirmActivation(); // Toast is handled in the store
+    confirmActivation();
   };
 
   const handleCopy = () => {
-    if (activationPopup.maxLink) {
-      navigator.clipboard?.writeText(activationPopup.maxLink).catch(() => {});
+    if (activationPopup.link) {
+      navigator.clipboard?.writeText(activationPopup.link).catch(() => {});
       showToast('Ссылка скопирована');
       setTimeout(() => {
         const store = usePrototypeStore.getState();
@@ -34,6 +39,10 @@ export function ActivationPopup() {
       }, 2000);
     }
   };
+
+  const instructionText = isMax
+    ? 'Войдите в МАКС, запустите бота нажав Старт, подтвердите номер.'
+    : 'Войдите в Telegram под указанным аккаунтом и перейдите по ссылке для подключения к боту.';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -48,10 +57,14 @@ export function ActivationPopup() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center">
-              <MessageCircle className="w-4 h-4 text-amber-600" />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              isMax ? 'bg-amber-50' : 'bg-blue-50'
+            }`}>
+              <ChannelIcon className={`w-4 h-4 ${isMax ? 'text-amber-600' : 'text-blue-600'}`} />
             </div>
-            <h2 className="text-base font-semibold text-gray-900">Подключение МАКС</h2>
+            <h2 className="text-base font-semibold text-gray-900">
+              Подключение {channelLabel}
+            </h2>
           </div>
           <button
             onClick={closeActivationPopup}
@@ -72,7 +85,7 @@ export function ActivationPopup() {
               </span>
             </div>
             <p className="text-xs text-green-700">
-              {activationPopup.recipientName} теперь будет получать уведомления через МАКС
+              {activationPopup.recipientName} теперь будет получать уведомления через {channelLabel}
             </p>
           </div>
 
@@ -85,18 +98,17 @@ export function ActivationPopup() {
               <p className="text-sm text-gray-700 leading-relaxed">
                 Вот ваша ссылка:{' '}
                 <span className="text-blue-600 font-medium break-all text-xs">
-                  {activationPopup.maxLink}
+                  {activationPopup.link}
                 </span>
               </p>
               <p className="text-sm text-gray-700 leading-relaxed mt-1.5">
-                Войдите в МАКС, запустите бота нажав <span className="font-medium">Старт</span>,
-                подтвердите номер.
+                {instructionText}
               </p>
             </div>
           </div>
 
           {/* Copy link button */}
-          {activationPopup.maxLink && (
+          {activationPopup.link && (
             <button
               onClick={handleCopy}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"

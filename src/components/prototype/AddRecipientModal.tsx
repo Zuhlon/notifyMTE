@@ -11,6 +11,7 @@ import {
   ArrowDown,
   Share2,
   Link as LinkIcon,
+  Lock,
 } from 'lucide-react';
 
 export function AddRecipientModal() {
@@ -21,8 +22,10 @@ export function AddRecipientModal() {
     setModalRecipientPosition,
     setModalActiveTab,
     setModalPhone,
+    setModalTelegramAccount,
     generateMaxLink,
     copyMaxLink,
+    generateTelegramLink,
     saveRecipient,
   } = usePrototypeStore();
 
@@ -30,6 +33,7 @@ export function AddRecipientModal() {
 
   const isSaveEnabled = modal.recipientName.trim().length > 0;
   const isConnectMaxEnabled = modal.activeTab === 'max' && modal.isPhoneValid;
+  const isConnectTelegramEnabled = modal.activeTab === 'telegram' && modal.isTelegramInputValid;
 
   // Format phone as user types: (XXX) XXX-XX-XX
   const handlePhoneChange = (value: string) => {
@@ -67,6 +71,8 @@ export function AddRecipientModal() {
     },
   ];
 
+  const modalTitle = modal.editingRecipientId ? 'Редактирование получателя' : 'Настройки получателя уведомлений';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
@@ -79,7 +85,7 @@ export function AddRecipientModal() {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[540px] mx-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Настройки получателя уведомлений</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{modalTitle}</h2>
           <button
             onClick={closeRecipientModal}
             className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
@@ -161,7 +167,14 @@ export function AddRecipientModal() {
                 />
               )}
               {modal.activeTab === 'telegram' && (
-                <TelegramTabContent />
+                <TelegramTabContent
+                  account={modal.telegramAccount}
+                  isLinkGenerated={modal.isTelegramLinkGenerated}
+                  generatedLink={modal.generatedTelegramLink}
+                  onAccountChange={setModalTelegramAccount}
+                  onGenerateLink={generateTelegramLink}
+                  isConnectEnabled={isConnectTelegramEnabled}
+                />
               )}
               {modal.activeTab === 'email' && (
                 <EmailTabContent />
@@ -318,9 +331,34 @@ function MaxTabContent({
 
 /* ─── Telegram Tab ───────────────────────────────────────── */
 
-function TelegramTabContent() {
+function TelegramTabContent({
+  account,
+  isLinkGenerated,
+  generatedLink,
+  onAccountChange,
+  onGenerateLink,
+  isConnectEnabled,
+}: {
+  account: string;
+  isLinkGenerated: boolean;
+  generatedLink: string;
+  onAccountChange: (v: string) => void;
+  onGenerateLink: () => void;
+  isConnectEnabled: boolean;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    if (generatedLink) {
+      navigator.clipboard?.writeText(generatedLink).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Instruction Block */}
       <div className="bg-blue-50 rounded-xl p-4">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -329,34 +367,80 @@ function TelegramTabContent() {
           <div className="space-y-1.5">
             <p className="text-sm text-blue-900 font-medium">Подключение через Telegram</p>
             <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-              <li>Введите Telegram username получателя</li>
-              <li>Система отправит приглашение в чат</li>
+              <li>Укажите номер или Telegram-аккаунт получателя</li>
+              <li>Нажмите «Подключить Telegram» и сохраните данные получателя</li>
               <li>
-                Получатель подтвердит подписку и уведомления начнут доставляться
+                Отправьте ссылку получателю — он должен войти в Telegram под указанным
+                аккаунтом и перейти по ссылке для подключения
               </li>
             </ol>
           </div>
         </div>
       </div>
 
+      {/* Telegram Account Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Telegram username <span className="text-red-500">*</span>
+          Номер или Telegram-аккаунт <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
-          placeholder="@username"
+          value={account}
+          onChange={(e) => onAccountChange(e.target.value)}
+          placeholder="@username или номер телефона"
           className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
         />
       </div>
 
-      <button
-        disabled
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
-      >
-        <MessageSquare className="w-4 h-4" />
-        Подключить Telegram
-      </button>
+      {/* Connect Button (before link generation) */}
+      {!isLinkGenerated && (
+        <button
+          onClick={onGenerateLink}
+          disabled={!isConnectEnabled}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isConnectEnabled
+              ? 'bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50'
+              : 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Подключить Telegram
+        </button>
+      )}
+
+      {/* Link Section (after generation) — copy is disabled until saved */}
+      {isLinkGenerated && (
+        <div className="space-y-3">
+          <div className="flex items-start gap-2">
+            <LinkIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-gray-600">
+              Ссылка для подключения Telegram. Сохраните данные получателя, чтобы получить
+              возможность скопировать ссылку:
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+              {generatedLink}
+            </div>
+            {/* Copy disabled — only available after save via activation popup */}
+            <button
+              disabled
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed flex-shrink-0"
+              title="Сначала сохраните данные получателя"
+            >
+              <Lock className="w-4 h-4" />
+              Сохраните для копирования
+            </button>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+            <Lock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+            <p className="text-[11px] text-amber-700 leading-relaxed">
+              Нажмите «Сохранить» ниже. После сохранения ссылка будет доступна для копирования
+              при нажатии на статус «Ожидает» в таблице получателей.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
