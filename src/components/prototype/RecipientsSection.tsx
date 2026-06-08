@@ -401,31 +401,18 @@ function RecipientRow({
               )}
             </div>
 
-            {/* Email - clickable when not configured */}
+            {/* Email — coming soon */}
             <div className="relative group">
-              <button
-                onClick={() => {
-                  if (recipient.emailStatus === 'not_configured') {
-                    onEditWithTab(recipient.id, 'email');
-                  }
-                }}
-                className={`flex items-center gap-1.5 transition-all rounded px-1.5 py-0.5 ${
-                  recipient.emailStatus === 'not_configured'
-                    ? 'opacity-50 hover:opacity-80 cursor-pointer ring-1 ring-gray-200 hover:ring-gray-300'
-                    : 'opacity-40'
-                }`}
-              >
+              <div className="flex items-center gap-1.5 opacity-40 cursor-default">
                 <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-100">
                   <Mail className="w-3.5 h-3.5 text-gray-400" />
                 </div>
-                <span className="text-[11px] text-gray-400">не настроен</span>
-              </button>
-              {recipient.emailStatus === 'not_configured' && (
-                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-44">
-                  <p className="font-medium mb-1">Email: не настроен</p>
-                  <p className="text-gray-300">Нажмите для настройки Email</p>
-                </div>
-              )}
+                <span className="text-[11px] text-gray-400">скоро</span>
+              </div>
+              <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-44">
+                <p className="font-medium mb-1">Email</p>
+                <p className="text-gray-300">Канал скоро будет доступен</p>
+              </div>
             </div>
 
             {/* Spacer */}

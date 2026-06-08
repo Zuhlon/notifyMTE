@@ -449,43 +449,16 @@ function TelegramTabContent({
 
 function EmailTabContent() {
   return (
-    <div className="space-y-4">
-      <div className="bg-blue-50 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Mail className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-sm text-blue-900 font-medium">Подключение через Email</p>
-            <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-              <li>Введите email получателя</li>
-              <li>Система отправит письмо-подтверждение</li>
-              <li>
-                Получатель подтвердит подписку по ссылке из письма
-              </li>
-            </ol>
-          </div>
-        </div>
+    <div className="flex flex-col items-center justify-center py-10">
+      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+        <Mail className="w-6 h-6 text-gray-400" />
       </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Email <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="email"
-          placeholder="email@example.com"
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-        />
-      </div>
-
-      <button
-        disabled
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed"
-      >
-        <Mail className="w-4 h-4" />
-        Подключить Email
-      </button>
+      <p className="text-sm font-medium text-gray-500 mb-1">
+        Канал Email
+      </p>
+      <p className="text-xs text-gray-400">
+        Скоро будет доступен
+      </p>
     </div>
   );
 }
