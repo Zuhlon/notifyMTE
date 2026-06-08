@@ -134,8 +134,8 @@ function SourceTable() {
       case 'employee_numbers':
         return scenario.employees.map(e => ({
           id: e.id,
-          code: e.shortNumber,
-          sub: e.sip,
+          code: e.phone,
+          sub: '',
           name: e.name,
           selected: e.selected,
         }));
@@ -176,7 +176,7 @@ function SourceTable() {
     filtered = filtered.filter(i =>
       i.name.toLowerCase().includes(q) ||
       i.code.toLowerCase().includes(q) ||
-      i.sub.toLowerCase().includes(q)
+      (i.sub && i.sub.toLowerCase().includes(q))
     );
   }
   if (scenario.filterMode === 'selected') {
@@ -184,12 +184,12 @@ function SourceTable() {
   }
 
   const headers = scenario.sourceType === 'employee_numbers'
-    ? ['Короткий номер', 'Телефон', 'Имя']
+    ? ['Номер', 'Имя']
     : scenario.sourceType === 'multi_channel'
     ? ['Номер', 'Название']
     : ['Код', 'Название'];
 
-  const gridCols = headers.length === 3 ? 'grid-cols-[32px_80px_1fr_1fr]' : 'grid-cols-[32px_80px_1fr]';
+  const gridCols = headers.length === 3 ? 'grid-cols-[32px_80px_1fr_1fr]' : 'grid-cols-[32px_1fr]';
 
   return (
     <div className="border-t border-gray-100">
