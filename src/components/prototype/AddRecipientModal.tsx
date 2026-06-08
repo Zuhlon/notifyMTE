@@ -11,6 +11,7 @@ import {
   Share2,
   Link as LinkIcon,
   Copy,
+  Unplug,
 } from 'lucide-react';
 
 export function AddRecipientModal() {
@@ -25,6 +26,8 @@ export function AddRecipientModal() {
     generateMaxLink,
     generateTelegramLink,
     saveRecipient,
+    disconnectChannel,
+    modal: { editingMaxStatus, editingTelegramStatus },
   } = usePrototypeStore();
 
   if (!modal.isOpen) return null;
@@ -172,6 +175,9 @@ export function AddRecipientModal() {
                   onPhoneChange={handlePhoneChange}
                   onGenerateLink={generateMaxLink}
                   isConnectEnabled={isConnectMaxEnabled}
+                  currentStatus={editingMaxStatus}
+                  isEditing={!!modal.editingRecipientId}
+                  onDisconnect={() => disconnectChannel('max')}
                 />
               )}
               {modal.activeTab === 'telegram' && (
@@ -182,6 +188,9 @@ export function AddRecipientModal() {
                   onAccountChange={setModalTelegramAccount}
                   onGenerateLink={generateTelegramLink}
                   isConnectEnabled={isConnectTelegramEnabled}
+                  currentStatus={editingTelegramStatus}
+                  isEditing={!!modal.editingRecipientId}
+                  onDisconnect={() => disconnectChannel('telegram')}
                 />
               )}
               {modal.activeTab === 'email' && (
@@ -226,6 +235,9 @@ function MaxTabContent({
   onPhoneChange,
   onGenerateLink,
   isConnectEnabled,
+  currentStatus,
+  isEditing,
+  onDisconnect,
 }: {
   phone: string;
   isLinkGenerated: boolean;
@@ -233,9 +245,25 @@ function MaxTabContent({
   onPhoneChange: (v: string) => void;
   onGenerateLink: () => void;
   isConnectEnabled: boolean;
+  currentStatus: string;
+  isEditing: boolean;
+  onDisconnect: () => void;
 }) {
+  const isConnected = currentStatus === 'active' || currentStatus === 'waiting';
+
   return (
     <div className="space-y-4">
+      {/* Disconnect button (only when editing & channel is configured) */}
+      {isEditing && isConnected && (
+        <button
+          onClick={onDisconnect}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors w-full"
+        >
+          <Unplug className="w-4 h-4" />
+          Отключить МАКС
+        </button>
+      )}
+
       {/* Instruction Block */}
       <div className="bg-blue-50 rounded-xl p-4">
         <div className="flex items-start gap-3">
@@ -315,6 +343,9 @@ function TelegramTabContent({
   onAccountChange,
   onGenerateLink,
   isConnectEnabled,
+  currentStatus,
+  isEditing,
+  onDisconnect,
 }: {
   account: string;
   isLinkGenerated: boolean;
@@ -322,9 +353,24 @@ function TelegramTabContent({
   onAccountChange: (v: string) => void;
   onGenerateLink: () => void;
   isConnectEnabled: boolean;
+  currentStatus: string;
+  isEditing: boolean;
+  onDisconnect: () => void;
 }) {
+  const isConnected = currentStatus === 'active' || currentStatus === 'waiting';
+
   return (
     <div className="space-y-4">
+      {/* Disconnect button (only when editing & channel is configured) */}
+      {isEditing && isConnected && (
+        <button
+          onClick={onDisconnect}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors w-full"
+        >
+          <Unplug className="w-4 h-4" />
+          Отключить Telegram
+        </button>
+      )}
       {/* Instruction Block */}
       <div className="bg-blue-50 rounded-xl p-4">
         <div className="flex items-start gap-3">

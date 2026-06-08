@@ -68,6 +68,8 @@ interface ModalState {
   isTelegramLinkGenerated: boolean;
   generatedTelegramLink: string;
   isTelegramInputValid: boolean;
+ editingMaxStatus: ConnectionStatus;
+  editingTelegramStatus: ConnectionStatus;
 }
 
 interface ActivationPopup {
@@ -152,6 +154,7 @@ interface PrototypeStore {
   setModalTelegramAccount: (account: string) => void;
   generateTelegramLink: () => void;
   saveRecipient: () => void;
+  disconnectChannel: (channel: 'max' | 'telegram') => void;
   resetModal: () => void;
 
   // Recipient actions
@@ -294,6 +297,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     isTelegramLinkGenerated: false,
     generatedTelegramLink: '',
     isTelegramInputValid: false,
+    editingMaxStatus: 'not_configured' as ConnectionStatus,
+    editingTelegramStatus: 'not_configured' as ConnectionStatus,
   },
   activationPopup: {
     visible: false,
@@ -544,6 +549,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isTelegramLinkGenerated: false,
       generatedTelegramLink: '',
       isTelegramInputValid: false,
+      editingMaxStatus: 'not_configured' as ConnectionStatus,
+      editingTelegramStatus: 'not_configured' as ConnectionStatus,
     },
     ...(!get().cjHidden && get().cjCollapsed ? {} : { cjExpandedStep: 'recipient' }),
   }),
@@ -563,6 +570,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isTelegramLinkGenerated: false,
       generatedTelegramLink: '',
       isTelegramInputValid: false,
+      editingMaxStatus: 'not_configured' as ConnectionStatus,
+      editingTelegramStatus: 'not_configured' as ConnectionStatus,
     },
   }),
   setModalRecipientName: (name) => set((s) => ({
@@ -648,6 +657,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isTelegramLinkGenerated: false,
       generatedTelegramLink: '',
       isTelegramInputValid: false,
+      editingMaxStatus: 'not_configured' as ConnectionStatus,
+      editingTelegramStatus: 'not_configured' as ConnectionStatus,
     };
 
     // Determine toast message
@@ -723,6 +734,34 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       toast: { message: '', visible: false },
     })), 3000);
   },
+  disconnectChannel: (channel) => {
+    const state = get();
+    if (!state.modal.editingRecipientId) return;
+    const statusField = channel === 'max' ? 'editingMaxStatus' : 'editingTelegramStatus';
+    const recipientStatusField = channel === 'max' ? 'maxStatus' : 'telegramStatus';
+    const recipientLinkField = channel === 'max' ? 'maxLink' : 'telegramLink';
+    const channelLabel = channel === 'max' ? 'МАКС' : 'Telegram';
+    // Immediately update recipient status
+    set((s) => ({
+      scenario: {
+        ...s.scenario,
+        recipients: s.scenario.recipients.map(r =>
+          r.id === s.modal.editingRecipientId
+            ? { ...r, [recipientStatusField]: 'not_configured' as ConnectionStatus, [recipientLinkField]: '' }
+            : r
+        ),
+      },
+      modal: {
+        ...s.modal,
+        [statusField]: 'not_configured' as ConnectionStatus,
+        ...(channel === 'max'
+          ? { isLinkGenerated: false, generatedLink: '', phone: '' }
+          : { isTelegramLinkGenerated: false, generatedTelegramLink: '', telegramAccount: '' }),
+      },
+      toast: { message: `${channelLabel} отключён`, visible: true },
+    }));
+    setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
+  },
   resetModal: () => set({
     modal: {
       isOpen: false,
@@ -739,6 +778,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       isTelegramLinkGenerated: false,
       generatedTelegramLink: '',
       isTelegramInputValid: false,
+      editingMaxStatus: 'not_configured' as ConnectionStatus,
+      editingTelegramStatus: 'not_configured' as ConnectionStatus,
     },
   }),
 
@@ -763,6 +804,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
           isTelegramLinkGenerated: !!recipient.telegramLink,
           generatedTelegramLink: recipient.telegramLink,
           isTelegramInputValid: recipient.telegramAccount.length > 0,
+          editingMaxStatus: recipient.maxStatus,
+          editingTelegramStatus: recipient.telegramStatus,
         },
       });
     }
@@ -787,6 +830,8 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
           isTelegramLinkGenerated: tab === 'telegram' ? !!recipient.telegramLink : !!recipient.telegramLink,
           generatedTelegramLink: recipient.telegramLink,
           isTelegramInputValid: recipient.telegramAccount.length > 0,
+          editingMaxStatus: recipient.maxStatus,
+          editingTelegramStatus: recipient.telegramStatus,
         },
       });
     }
