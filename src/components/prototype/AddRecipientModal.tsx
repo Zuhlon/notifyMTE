@@ -74,28 +74,28 @@ export function AddRecipientModal() {
   const modalTitle = modal.editingRecipientId ? 'Редактирование получателя' : 'Настройки получателя уведомлений';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50">
       {/* Overlay */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/30 transition-opacity"
         onClick={closeRecipientModal}
       />
 
-      {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[540px] mx-4 max-h-[90vh] overflow-y-auto">
+      {/* Side Sheet */}
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-[480px] bg-white shadow-2xl flex flex-col animate-slide-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{modalTitle}</h2>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">{modalTitle}</h2>
           <button
             onClick={closeRecipientModal}
-            className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-50 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           {/* User Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -184,17 +184,17 @@ export function AddRecipientModal() {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-2 bg-white">
           <button
             onClick={closeRecipientModal}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
           >
             Отменить
           </button>
           <button
             onClick={saveRecipient}
             disabled={!isSaveEnabled}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
               isSaveEnabled
                 ? 'bg-amber-400 text-gray-900 hover:bg-amber-500'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
