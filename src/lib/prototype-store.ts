@@ -3,13 +3,19 @@ import { create } from 'zustand';
 export type SourceType = 'employee_numbers' | 'multi_channel' | 'departments' | 'call_centers';
 export type ChannelTab = 'max' | 'telegram' | 'email';
 export type ConnectionStatus = 'not_configured' | 'waiting' | 'active';
-export type ModalPhase = 'empty' | 'filling' | 'phone_entered' | 'link_generated';
 
 export interface Employee {
   id: string;
   shortNumber: string;
   phone: string;
   sip: string;
+  name: string;
+  selected: boolean;
+}
+
+export interface SelectableItem {
+  id: string;
+  code: string;
   name: string;
   selected: boolean;
 }
@@ -35,6 +41,9 @@ export interface Scenario {
   isRecipientsExpanded: boolean;
   isScenarioSaved: boolean;
   employees: Employee[];
+  multiChannelNumbers: SelectableItem[];
+  departments: SelectableItem[];
+  callCenters: SelectableItem[];
   recipients: Recipient[];
   showSavedNotification: boolean;
   filterMode: 'all' | 'selected';
@@ -54,10 +63,18 @@ interface ModalState {
   isSaving: boolean;
 }
 
+interface ActivationPopup {
+  visible: boolean;
+  recipientId: string;
+  recipientName: string;
+  maxLink: string;
+}
+
 interface ScenarioListItem {
   id: string;
   name: string;
-  selectedEmployeeCount: number;
+  sourceType: SourceType;
+  selectedCount: number;
   recipientCount: number;
 }
 
@@ -66,7 +83,9 @@ interface PrototypeStore {
   scenarios: ScenarioListItem[];
   activeScenarioId: string;
   scenario: Scenario;
+  scenarioStates: Record<string, Scenario>;
   modal: ModalState;
+  activationPopup: ActivationPopup;
 
   // Toast notifications
   toast: { message: string; visible: boolean };
@@ -81,10 +100,10 @@ interface PrototypeStore {
   setSourceType: (type: SourceType) => void;
   toggleSourceCollapsed: () => void;
 
-  // Employee selection
-  toggleEmployeeSelection: (id: string) => void;
-  selectAllEmployees: () => void;
-  deselectAllEmployees: () => void;
+  // Employee / item selection (generic)
+  toggleSelection: (sourceType: SourceType, id: string) => void;
+  selectAll: (sourceType: SourceType) => void;
+  deselectAll: (sourceType: SourceType) => void;
   setEmployeeFilter: (mode: 'all' | 'selected') => void;
   setEmployeeSearch: (query: string) => void;
   saveSelectedNumbers: () => void;
@@ -109,7 +128,11 @@ interface PrototypeStore {
   // Recipient actions
   editRecipient: (id: string) => void;
   deleteRecipient: (id: string) => void;
-  simulateActivation: (recipientId: string) => void;
+
+  // Activation popup
+  openActivationPopup: (recipientId: string) => void;
+  closeActivationPopup: () => void;
+  confirmActivation: () => void;
 
   // Notifications
   dismissSavedNotification: () => void;
@@ -123,7 +146,16 @@ interface PrototypeStore {
   closeAll: () => void;
 }
 
-const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 100 }, (_, i) => ({
+const SOURCE_TYPE_LABELS: Record<SourceType, string> = {
+  employee_numbers: 'номеров сотрудников',
+  multi_channel: 'многоканальных номеров',
+  departments: 'отделов',
+  call_centers: 'колл-центров',
+};
+
+export { SOURCE_TYPE_LABELS };
+
+const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 50 }, (_, i) => ({
   id: `emp-${i + 1}`,
   shortNumber: i < 4 ? '201' : i < 8 ? '202' : i < 12 ? '203' : i < 16 ? '204' : `${200 + Math.floor(i / 4)}`,
   phone: `+7 (${900 + Math.floor(Math.random() * 99)}) ${String(Math.floor(Math.random() * 900) + 100).slice(0, 3)}-${String(Math.floor(Math.random() * 90) + 10).padStart(3, '0')}-${String(Math.floor(Math.random() * 90) + 10)}`,
@@ -143,30 +175,66 @@ const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 100 }, (_, i) => ({
   selected: false,
 }));
 
-const initialScenarios: ScenarioListItem[] = [
-  { id: 'scenario-1', name: 'Новый 1', selectedEmployeeCount: 5, recipientCount: 2 },
-  { id: 'scenario-2', name: 'Новый 2', selectedEmployeeCount: 10, recipientCount: 0 },
-  { id: 'scenario-3', name: 'Новый 3', selectedEmployeeCount: 0, recipientCount: 0 },
+const MOCK_MULTI_CHANNEL: SelectableItem[] = Array.from({ length: 12 }, (_, i) => ({
+  id: `mc-${i + 1}`,
+  code: `+7 (495) ${String(100 + i * 15).slice(0, 3)}-${String(10 + i * 7).padStart(2, '0')}-${String(20 + i * 3).padStart(2, '0')}`,
+  name: `Многоканальный номер ${i + 1}`,
+  selected: false,
+}));
+
+const MOCK_DEPARTMENTS: SelectableItem[] = [
+  { id: 'dep-1', code: '101', name: 'Отдел продаж', selected: false },
+  { id: 'dep-2', code: '102', name: 'Отдел поддержки', selected: false },
+  { id: 'dep-3', code: '103', name: 'Отдел маркетинга', selected: false },
+  { id: 'dep-4', code: '104', name: 'Бухгалтерия', selected: false },
+  { id: 'dep-5', code: '105', name: 'IT отдел', selected: false },
+  { id: 'dep-6', code: '106', name: 'HR отдел', selected: false },
+  { id: 'dep-7', code: '107', name: 'Логистика', selected: false },
+  { id: 'dep-8', code: '108', name: 'Юридический отдел', selected: false },
 ];
 
-export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
-  scenarios: initialScenarios,
-  activeScenarioId: 'scenario-3',
-  scenario: {
-    id: 'scenario-3',
-    name: 'Новый 3',
+const MOCK_CALL_CENTERS: SelectableItem[] = [
+  { id: 'cc-1', code: '301', name: 'Колл-центр "Входящие"', selected: false },
+  { id: 'cc-2', code: '302', name: 'Колл-центр "Исходящие"', selected: false },
+  { id: 'cc-3', code: '303', name: 'Колл-центр "Техподдержка"', selected: false },
+  { id: 'cc-4', code: '304', name: 'Колл-центр "Продажи"', selected: false },
+  { id: 'cc-5', code: '305', name: 'Колл-центр "VIP"', selected: false },
+];
+
+function createDefaultScenario(id: string, name: string): Scenario {
+  return {
+    id,
+    name,
     sourceType: 'employee_numbers',
     isSourceCollapsed: false,
     isNumbersSaved: false,
     isRecipientsExpanded: false,
     isScenarioSaved: false,
-    employees: MOCK_EMPLOYEES,
+    employees: MOCK_EMPLOYEES.map(e => ({ ...e, selected: false })),
+    multiChannelNumbers: MOCK_MULTI_CHANNEL.map(e => ({ ...e, selected: false })),
+    departments: MOCK_DEPARTMENTS.map(e => ({ ...e, selected: false })),
+    callCenters: MOCK_CALL_CENTERS.map(e => ({ ...e, selected: false })),
     recipients: [],
     showSavedNotification: false,
     filterMode: 'all',
     searchQuery: '',
     recipientSearchQuery: '',
-  },
+  };
+}
+
+const initialScenarios: ScenarioListItem[] = [
+  { id: 'scenario-1', name: 'Продажи', sourceType: 'employee_numbers', selectedCount: 5, recipientCount: 2 },
+  { id: 'scenario-2', name: 'Поддержка', sourceType: 'multi_channel', selectedCount: 3, recipientCount: 1 },
+  { id: 'scenario-3', name: 'Новый сценарий', sourceType: 'employee_numbers', selectedCount: 0, recipientCount: 0 },
+];
+
+const initialScenario = createDefaultScenario('scenario-3', 'Новый сценарий');
+
+export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
+  scenarios: initialScenarios,
+  activeScenarioId: 'scenario-3',
+  scenario: initialScenario,
+  scenarioStates: { 'scenario-3': initialScenario },
   modal: {
     isOpen: false,
     recipientName: '',
@@ -178,34 +246,52 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     generatedLink: '',
     isSaving: false,
   },
+  activationPopup: {
+    visible: false,
+    recipientId: '',
+    recipientName: '',
+    maxLink: '',
+  },
   toast: { message: '', visible: false },
 
   // Scenario sidebar
-  selectScenario: (id) => set({ activeScenarioId: id }),
+  selectScenario: (id) => {
+    const state = get();
+    // Save current scenario state
+    const updatedStates = { ...state.scenarioStates };
+    updatedStates[state.activeScenarioId] = state.scenario;
+    // Load new scenario or create default
+    let newScenario = updatedStates[id];
+    if (!newScenario) {
+      const listItem = state.scenarios.find(s => s.id === id);
+      newScenario = createDefaultScenario(id, listItem?.name || 'Новый');
+    }
+    set({
+      activeScenarioId: id,
+      scenario: newScenario,
+      scenarioStates: updatedStates,
+    });
+  },
   addScenario: () => {
     const state = get();
-    const newId = `scenario-${state.scenarios.length + 1}`;
-    const newScenario: ScenarioListItem = {
+    const newId = `scenario-${Date.now()}`;
+    const newScenario = createDefaultScenario(newId, 'Новый сценарий');
+    const newListItem: ScenarioListItem = {
       id: newId,
-      name: `Новый ${state.scenarios.length + 1}`,
-      selectedEmployeeCount: 0,
+      name: 'Новый сценарий',
+      sourceType: 'employee_numbers',
+      selectedCount: 0,
       recipientCount: 0,
     };
+    // Save current state first
+    const updatedStates = { ...state.scenarioStates };
+    updatedStates[state.activeScenarioId] = state.scenario;
+    updatedStates[newId] = newScenario;
     set({
-      scenarios: [...state.scenarios, newScenario],
+      scenarios: [...state.scenarios, newListItem],
       activeScenarioId: newId,
-      scenario: {
-        ...state.scenario,
-        id: newId,
-        name: newScenario.name,
-        isSourceCollapsed: false,
-        isNumbersSaved: false,
-        isRecipientsExpanded: false,
-        isScenarioSaved: false,
-        employees: MOCK_EMPLOYEES.map(e => ({ ...e, selected: false })),
-        recipients: [],
-        showSavedNotification: false,
-      },
+      scenario: newScenario,
+      scenarioStates: updatedStates,
     });
   },
   renameScenario: (name) => set((s) => ({
@@ -214,37 +300,74 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       sc.id === s.activeScenarioId ? { ...sc, name } : sc
     ),
   })),
-  deleteScenario: (id) => set((s) => ({
-    scenarios: s.scenarios.filter(sc => sc.id !== id),
-  })),
+  deleteScenario: (id) => set((s) => {
+    if (s.scenarios.length <= 1) return s; // Can't delete last scenario
+    const remaining = s.scenarios.filter(sc => sc.id !== id);
+    const newStates = { ...s.scenarioStates };
+    delete newStates[id];
+    // If deleting active, switch to first remaining
+    const newActiveId = s.activeScenarioId === id ? remaining[0].id : s.activeScenarioId;
+    const newScenario = newStates[newActiveId] || createDefaultScenario(newActiveId, remaining[0]?.name || 'Новый');
+    return {
+      scenarios: remaining,
+      activeScenarioId: newActiveId,
+      scenario: newScenario,
+      scenarioStates: newStates,
+    };
+  }),
 
   // Source type
   setSourceType: (type) => set((s) => ({
     scenario: { ...s.scenario, sourceType: type, isNumbersSaved: false, isRecipientsExpanded: false, isSourceCollapsed: false },
+    scenarios: s.scenarios.map(sc =>
+      sc.id === s.activeScenarioId ? { ...sc, sourceType: type, selectedCount: 0 } : sc
+    ),
   })),
   toggleSourceCollapsed: () => set((s) => ({
     scenario: { ...s.scenario, isSourceCollapsed: !s.scenario.isSourceCollapsed },
   })),
 
-  // Employee selection
-  toggleEmployeeSelection: (id) => set((s) => ({
-    scenario: {
-      ...s.scenario,
-      employees: s.scenario.employees.map(e => e.id === id ? { ...e, selected: !e.selected } : e),
-    },
-  })),
-  selectAllEmployees: () => set((s) => ({
-    scenario: {
-      ...s.scenario,
-      employees: s.scenario.employees.map(e => ({ ...e, selected: true })),
-    },
-  })),
-  deselectAllEmployees: () => set((s) => ({
-    scenario: {
-      ...s.scenario,
-      employees: s.scenario.employees.map(e => ({ ...e, selected: false })),
-    },
-  })),
+  // Generic selection
+  toggleSelection: (sourceType, id) => set((s) => {
+    const getList = () => {
+      switch (sourceType) {
+        case 'employee_numbers': return s.scenario.employees;
+        case 'multi_channel': return s.scenario.multiChannelNumbers;
+        case 'departments': return s.scenario.departments;
+        case 'call_centers': return s.scenario.callCenters;
+      }
+    };
+    const list = getList();
+    const newList = list.map((item: Employee | SelectableItem) =>
+      item.id === id ? { ...item, selected: !item.selected } : item
+    );
+    switch (sourceType) {
+      case 'employee_numbers': return { scenario: { ...s.scenario, employees: newList as Employee[] } };
+      case 'multi_channel': return { scenario: { ...s.scenario, multiChannelNumbers: newList as SelectableItem[] } };
+      case 'departments': return { scenario: { ...s.scenario, departments: newList as SelectableItem[] } };
+      case 'call_centers': return { scenario: { ...s.scenario, callCenters: newList as SelectableItem[] } };
+    }
+  }),
+  selectAll: (sourceType) => set((s) => {
+    const selectFn = <T extends { selected: boolean }>(list: T[]): T[] =>
+      list.map(item => ({ ...item, selected: true }));
+    switch (sourceType) {
+      case 'employee_numbers': return { scenario: { ...s.scenario, employees: selectFn(s.scenario.employees) as Employee[] } };
+      case 'multi_channel': return { scenario: { ...s.scenario, multiChannelNumbers: selectFn(s.scenario.multiChannelNumbers) } };
+      case 'departments': return { scenario: { ...s.scenario, departments: selectFn(s.scenario.departments) } };
+      case 'call_centers': return { scenario: { ...s.scenario, callCenters: selectFn(s.scenario.callCenters) } };
+    }
+  }),
+  deselectAll: (sourceType) => set((s) => {
+    const deselectFn = <T extends { selected: boolean }>(list: T[]): T[] =>
+      list.map(item => ({ ...item, selected: false }));
+    switch (sourceType) {
+      case 'employee_numbers': return { scenario: { ...s.scenario, employees: deselectFn(s.scenario.employees) as Employee[] } };
+      case 'multi_channel': return { scenario: { ...s.scenario, multiChannelNumbers: deselectFn(s.scenario.multiChannelNumbers) } };
+      case 'departments': return { scenario: { ...s.scenario, departments: deselectFn(s.scenario.departments) } };
+      case 'call_centers': return { scenario: { ...s.scenario, callCenters: deselectFn(s.scenario.callCenters) } };
+    }
+  }),
   setEmployeeFilter: (mode) => set((s) => ({
     scenario: { ...s.scenario, filterMode: mode },
   })),
@@ -253,9 +376,18 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   })),
   saveSelectedNumbers: () => {
     const state = get();
-    const selectedCount = state.scenario.employees.filter(e => e.selected).length;
+    const getSelectedCount = () => {
+      switch (state.scenario.sourceType) {
+        case 'employee_numbers': return state.scenario.employees.filter(e => e.selected).length;
+        case 'multi_channel': return state.scenario.multiChannelNumbers.filter(e => e.selected).length;
+        case 'departments': return state.scenario.departments.filter(e => e.selected).length;
+        case 'call_centers': return state.scenario.callCenters.filter(e => e.selected).length;
+      }
+    };
+    const selectedCount = getSelectedCount();
     if (selectedCount === 0) {
-      set({ toast: { message: 'Выберите хотя бы один номер', visible: true } });
+      set({ toast: { message: 'Выберите хотя бы один элемент', visible: true } });
+      setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
       return;
     }
     set((s) => ({
@@ -269,21 +401,31 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       },
       scenarios: s.scenarios.map(sc =>
         sc.id === s.activeScenarioId
-          ? { ...sc, selectedEmployeeCount: s.scenario.employees.filter(e => e.selected).length }
+          ? { ...sc, selectedCount, sourceType: s.scenario.sourceType }
           : sc
       ),
     }));
-    // Auto-dismiss notification after 3s
     setTimeout(() => set((s) => ({
       scenario: { ...s.scenario, showSavedNotification: false },
     })), 3000);
   },
-  cancelSelection: () => set((s) => ({
-    scenario: {
-      ...s.scenario,
-      employees: s.scenario.employees.map(e => ({ ...e, selected: false })),
-    },
-  })),
+  cancelSelection: () => {
+    const state = get();
+    switch (state.scenario.sourceType) {
+      case 'employee_numbers': set((s) => ({
+        scenario: { ...s.scenario, employees: s.scenario.employees.map(e => ({ ...e, selected: false })) },
+      })); break;
+      case 'multi_channel': set((s) => ({
+        scenario: { ...s.scenario, multiChannelNumbers: s.scenario.multiChannelNumbers.map(e => ({ ...e, selected: false })) },
+      })); break;
+      case 'departments': set((s) => ({
+        scenario: { ...s.scenario, departments: s.scenario.departments.map(e => ({ ...e, selected: false })) },
+      })); break;
+      case 'call_centers': set((s) => ({
+        scenario: { ...s.scenario, callCenters: s.scenario.callCenters.map(e => ({ ...e, selected: false })) },
+      })); break;
+    }
+  },
 
   // Recipients section
   toggleRecipientsExpanded: () => set((s) => ({
@@ -330,7 +472,6 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     modal: { ...s.modal, activeTab: tab, isLinkGenerated: false },
   })),
   setModalPhone: (phone) => {
-    // Format phone: (XXX) XXX-XX-XX
     const cleaned = phone.replace(/\D/g, '');
     const isValid = cleaned.length >= 10;
     set((s) => ({
@@ -378,6 +519,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         ...s.scenario,
         recipients: [...s.scenario.recipients, newRecipient],
         isScenarioSaved: true,
+        showSavedNotification: true,
       },
       scenarios: s.scenarios.map(sc =>
         sc.id === s.activeScenarioId
@@ -396,6 +538,9 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         isSaving: false,
       },
     }));
+    setTimeout(() => set((s) => ({
+      scenario: { ...s.scenario, showSavedNotification: false },
+    })), 3000);
   },
   resetModal: () => set({
     modal: {
@@ -442,14 +587,39 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         : sc
     ),
   })),
-  simulateActivation: (recipientId) => set((s) => ({
-    scenario: {
-      ...s.scenario,
-      recipients: s.scenario.recipients.map(r =>
-        r.id === recipientId ? { ...r, maxStatus: 'active' as ConnectionStatus } : r
-      ),
-    },
-  })),
+
+  // Activation popup
+  openActivationPopup: (recipientId) => {
+    const state = get();
+    const recipient = state.scenario.recipients.find(r => r.id === recipientId);
+    if (recipient && recipient.maxStatus === 'waiting') {
+      set({
+        activationPopup: {
+          visible: true,
+          recipientId: recipient.id,
+          recipientName: recipient.name,
+          maxLink: recipient.maxLink,
+        },
+      });
+    }
+  },
+  closeActivationPopup: () => set({
+    activationPopup: { visible: false, recipientId: '', recipientName: '', maxLink: '' },
+  }),
+  confirmActivation: () => {
+    const state = get();
+    set((s) => ({
+      scenario: {
+        ...s.scenario,
+        recipients: s.scenario.recipients.map(r =>
+          r.id === state.activationPopup.recipientId ? { ...r, maxStatus: 'active' as ConnectionStatus } : r
+        ),
+      },
+      activationPopup: { visible: false, recipientId: '', recipientName: '', maxLink: '' },
+      toast: { message: 'МАКС успешно подключён', visible: true },
+    }));
+    setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
+  },
 
   // Notifications
   dismissSavedNotification: () => set((s) => ({
@@ -465,9 +635,6 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
 
   // Navigation
   closeAll: () => set((s) => ({
-    scenario: {
-      ...s.scenario,
-      showSavedNotification: false,
-    },
+    scenario: { ...s.scenario, showSavedNotification: false },
   })),
 }));

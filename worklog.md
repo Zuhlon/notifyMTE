@@ -1,25 +1,22 @@
 ---
 Task ID: 1
-Agent: Main Agent
-Task: Build interactive prototype for missed call notification scenario configuration (MAX messenger connection flow)
+Agent: main
+Task: Build interactive prototype for admin panel - missed call notification scenarios
 
 Work Log:
-- Analyzed 9 screenshots (01-03, 05-11) from GitHub repo using VLM CLI
-- Identified design tokens: Yellow (#F5C518) primary accent, blue info blocks, clean white UI
-- Mapped complete user flow: scenario creation → number selection → save → add recipient → MAX connection → activation
-- Initialized Next.js 16 project with fullstack-dev skill
-- Created Zustand store (prototype-store.ts) with full state management
-- Built 6 components: ScenarioSidebar, ConfigPanel, SourceSelector, EmployeeTable, RecipientsSection, AddRecipientModal, Toast
-- Implemented complete MAX connection flow with phone formatting, link generation, copy, status transitions
-- Added tooltips for status indicators (red circle, MAX icon)
-- Added edge cases: empty validation, disabled button states, phone formatting
-- Verified full flow works: select 3 employees → save → add recipient → fill form → connect MAX → save → simulate activation → "Подключен" status
-- Fixed lint warnings (aria-checked on button role)
-- Confirmed dev server running with no errors
+- Initialized fullstack dev environment (Next.js 16 + Zustand + Tailwind)
+- Updated prototype-store.ts: per-scenario state persistence via scenarioStates map, generic selection for 4 source types (employee_numbers, multi_channel, departments, call_centers), activation popup state, toast in confirmActivation
+- Updated ScenarioSidebar.tsx: dynamic source type labels ("для X номеров сотрудников", "для X многоканальных номеров", etc.), active scenario indicator with green "Активен" badge
+- Updated SourceSelector.tsx: compact 2x2 radio button grid for source types, generic SourceTable component that adapts columns based on type, reduced padding/size to fit on screen with Save button visible
+- Updated RecipientsSection.tsx: always visible (removed early return), disabled/collapsed state with tooltip "Сначала выберите и сохраните источник пропущенных" when no numbers saved, clickable "Ожидает" chip with visual highlight ring, activation popup trigger
+- Updated ConfigPanel.tsx: compact layout, removed unused imports
+- Created ActivationPopup.tsx: popup with green "Подключен" status, instruction text "Вот ваша ссылка, войдите в МАКС, запустите бота нажав Старт, подтвердите номер", copy link button, confirm button
+- Updated page.tsx: integrated ActivationPopup, sticky header
+- Removed dead code: EmployeeTable.tsx (logic moved into SourceSelector)
+- Fixed toast timing: moved showToast from component to store's confirmActivation for reliability
+- Browser E2E verification: all 17 steps passed
 
 Stage Summary:
-- Fully functional interactive prototype for usability testing
-- Supports: employee selection, number saving, recipient addition, MAX/Telegram/Email tabs, link generation, copy, status transitions (не настроен → ожидает → активен)
-- Tooltips on hover for status indicators
-- Prototype debug functions exposed via window.__proto_* for testing
-- Files: src/app/page.tsx, src/lib/prototype-store.ts, src/components/prototype/*.tsx
+- All user requirements implemented: scenario switching, always-visible recipients block with disabled state, 4 source types, compact source selector, MAX connection flow (enter phone → generate link → copy → save → Ожидает → click → Подключен popup)
+- Prototype verified end-to-end via browser automation
+- Files: src/lib/prototype-store.ts, src/components/prototype/*.tsx, src/app/page.tsx
