@@ -412,6 +412,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     scenarios: s.scenarios.map(sc =>
       sc.id === s.activeScenarioId ? { ...sc, sourceType: type, selectedCount: 0 } : sc
     ),
+    ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'source' }),
   })),
   toggleSourceCollapsed: () => set((s) => ({
     scenario: { ...s.scenario, isSourceCollapsed: !s.scenario.isSourceCollapsed },
@@ -494,6 +495,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
           ? { ...sc, selectedCount, sourceType: s.scenario.sourceType }
           : sc
       ),
+      ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'numbers' }),
     }));
     setTimeout(() => set((s) => ({
       scenario: { ...s.scenario, showSavedNotification: false },
@@ -543,6 +545,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       generatedTelegramLink: '',
       isTelegramInputValid: false,
     },
+    ...(!get().cjHidden && get().cjCollapsed ? {} : { cjExpandedStep: 'recipient' }),
   }),
   closeRecipientModal: () => set({
     modal: {
@@ -586,6 +589,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     const link = `https://max.bot/start?phone=7${digits}`;
     set((s) => ({
       modal: { ...s.modal, isLinkGenerated: true, generatedLink: link },
+      ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'link' }),
     }));
   },
   copyMaxLink: () => {
@@ -609,6 +613,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     const link = 'https://t.me/mte_notify_bot?start=link_a1b2c3d4';
     set((s) => ({
       modal: { ...s.modal, isTelegramLinkGenerated: true, generatedTelegramLink: link },
+      ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'link' }),
     }));
   },
   saveRecipient: () => {
@@ -679,6 +684,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         },
         modal: resetModal,
         toast: { message: toastMessage, visible: true },
+        ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'save' }),
       }));
     } else {
       // Create new recipient
@@ -709,6 +715,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         ),
         modal: resetModal,
         toast: { message: toastMessage, visible: true },
+        ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'save' }),
       }));
     }
     setTimeout(() => set((s) => ({
@@ -840,6 +847,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       },
       activationPopup: { visible: false, channel: 'max', recipientId: '', recipientName: '', link: '' },
       toast: { message: toastMsg, visible: true },
+      ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'activate' }),
     }));
     setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
   },
