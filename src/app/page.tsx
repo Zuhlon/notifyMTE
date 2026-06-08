@@ -25,6 +25,8 @@ export default function PrototypePage() {
     confirmActivation,
     activationPopup,
     closeActivationPopup,
+    cjHidden,
+    toggleCJHidden,
   } = usePrototypeStore();
 
   return (
@@ -44,6 +46,14 @@ export default function PrototypePage() {
           <X className="w-4 h-4" />
           Закрыть
         </button>
+        {cjHidden && (
+          <button
+            onClick={toggleCJHidden}
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors"
+          >
+            Показать CJ
+          </button>
+        )}
       </header>
 
       {/* CJ Tracker */}

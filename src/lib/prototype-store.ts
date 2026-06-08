@@ -106,10 +106,12 @@ interface PrototypeStore {
   cjSteps: CJStep[];
   cjExpandedStep: string | null;
   cjCollapsed: boolean;
+  cjHidden: boolean;
   setStepEmotion: (stepId: string, emotion: string) => void;
   setStepComment: (stepId: string, comment: string) => void;
   toggleStepExpanded: (stepId: string) => void;
   toggleCJCollapsed: () => void;
+  toggleCJHidden: () => void;
   exportCJResults: () => string;
 
   // Toast notifications
@@ -313,6 +315,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   ],
   cjExpandedStep: null,
   cjCollapsed: false,
+  cjHidden: false,
   setStepEmotion: (stepId, emotion) => set((s) => ({
     cjSteps: s.cjSteps.map(st => st.id === stepId ? { ...st, emotion } : st),
   })),
@@ -323,6 +326,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     cjExpandedStep: s.cjExpandedStep === stepId ? null : stepId,
   })),
   toggleCJCollapsed: () => set((s) => ({ cjCollapsed: !s.cjCollapsed })),
+  toggleCJHidden: () => set((s) => ({ cjHidden: !s.cjHidden })),
   exportCJResults: () => {
     const { cjSteps } = get();
     const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });

@@ -8,6 +8,7 @@ import {
   Download,
   ChevronRight,
   MessageSquare,
+  X,
 } from 'lucide-react';
 
 const EMOTIONS = ['😊', '😐', '😕', '😤', '🤔', '😍', '👎', '👍'];
@@ -17,8 +18,10 @@ export function CJTracker() {
     cjSteps,
     cjExpandedStep,
     cjCollapsed,
+    cjHidden,
     toggleStepExpanded,
     toggleCJCollapsed,
+    toggleCJHidden,
     setStepEmotion,
     setStepComment,
     exportCJResults,
@@ -40,6 +43,8 @@ export function CJTracker() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  if (cjHidden) return null;
 
   return (
     <div className="border-b border-gray-200 bg-white">
@@ -86,6 +91,13 @@ export function CJTracker() {
               >
                 <Download className="w-3 h-3" />
                 Скачать
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleCJHidden(); }}
+                className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+                title="Скрыть карту CJ"
+              >
+                <X className="w-3.5 h-3.5" />
               </button>
               <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
             </div>
