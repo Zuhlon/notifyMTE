@@ -6,6 +6,7 @@ import { ScenarioSidebar } from '@/components/prototype/ScenarioSidebar';
 import { ConfigPanel } from '@/components/prototype/ConfigPanel';
 import { AddRecipientModal } from '@/components/prototype/AddRecipientModal';
 import { ActivationPopup } from '@/components/prototype/ActivationPopup';
+import { CJTracker } from '@/components/prototype/CJTracker';
 import { Toast } from '@/components/prototype/Toast';
 import {
   X,
@@ -44,6 +45,9 @@ export default function PrototypePage() {
           Закрыть
         </button>
       </header>
+
+      {/* CJ Tracker */}
+      <CJTracker />
 
       {/* Main Content */}
       <div className="max-w-[1200px] mx-auto p-6">

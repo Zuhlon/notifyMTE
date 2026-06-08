@@ -86,6 +86,13 @@ interface ScenarioListItem {
   recipientCount: number;
 }
 
+export interface CJStep {
+  id: string;
+  label: string;
+  emotion: string;
+  comment: string;
+}
+
 interface PrototypeStore {
   // Main state
   scenarios: ScenarioListItem[];
@@ -94,6 +101,16 @@ interface PrototypeStore {
   scenarioStates: Record<string, Scenario>;
   modal: ModalState;
   activationPopup: ActivationPopup;
+
+  // CJ tracker
+  cjSteps: CJStep[];
+  cjExpandedStep: string | null;
+  cjCollapsed: boolean;
+  setStepEmotion: (stepId: string, emotion: string) => void;
+  setStepComment: (stepId: string, comment: string) => void;
+  toggleStepExpanded: (stepId: string) => void;
+  toggleCJCollapsed: () => void;
+  exportCJResults: () => string;
 
   // Toast notifications
   toast: { message: string; visible: boolean };
@@ -284,6 +301,44 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     link: '',
   },
   toast: { message: '', visible: false },
+
+  // CJ tracker
+  cjSteps: [
+    { id: 'source', label: 'Выбор источника', emotion: '', comment: '' },
+    { id: 'numbers', label: 'Выбор номеров', emotion: '', comment: '' },
+    { id: 'recipient', label: 'Добавление получателя', emotion: '', comment: '' },
+    { id: 'link', label: 'Генерация ссылки', emotion: '', comment: '' },
+    { id: 'save', label: 'Сохранение и копирование', emotion: '', comment: '' },
+    { id: 'activate', label: 'Подтверждение подключения', emotion: '', comment: '' },
+  ],
+  cjExpandedStep: null,
+  cjCollapsed: false,
+  setStepEmotion: (stepId, emotion) => set((s) => ({
+    cjSteps: s.cjSteps.map(st => st.id === stepId ? { ...st, emotion } : st),
+  })),
+  setStepComment: (stepId, comment) => set((s) => ({
+    cjSteps: s.cjSteps.map(st => st.id === stepId ? { ...st, comment } : st),
+  })),
+  toggleStepExpanded: (stepId) => set((s) => ({
+    cjExpandedStep: s.cjExpandedStep === stepId ? null : stepId,
+  })),
+  toggleCJCollapsed: () => set((s) => ({ cjCollapsed: !s.cjCollapsed })),
+  exportCJResults: () => {
+    const { cjSteps } = get();
+    const now = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+    const lines = [
+      `Результаты прохождения CJ — ${now}`,
+      '=' .repeat(50),
+      '',
+    ];
+    cjSteps.forEach((step, i) => {
+      lines.push(`${i + 1}. ${step.label}`);
+      lines.push(`   Эмоция: ${step.emotion || '(не указана)'}`);
+      lines.push(`   Комментарий: ${step.comment || '(нет)'}`);
+      lines.push('');
+    });
+    return lines.join('\n');
+  },
 
   // Scenario sidebar
   selectScenario: (id) => {
