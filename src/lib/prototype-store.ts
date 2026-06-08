@@ -127,6 +127,7 @@ interface PrototypeStore {
 
   // Recipient actions
   editRecipient: (id: string) => void;
+  editRecipientWithTab: (id: string, tab: ChannelTab) => void;
   deleteRecipient: (id: string) => void;
 
   // Activation popup
@@ -583,6 +584,25 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
           activeTab: recipient.activeTab,
           phone: recipient.phone,
           isLinkGenerated: !!recipient.maxLink,
+          isPhoneValid: recipient.phone.length > 0,
+          generatedLink: recipient.maxLink,
+          isSaving: false,
+        },
+      });
+    }
+  },
+  editRecipientWithTab: (id, tab) => {
+    const state = get();
+    const recipient = state.scenario.recipients.find(r => r.id === id);
+    if (recipient) {
+      set({
+        modal: {
+          isOpen: true,
+          recipientName: recipient.name,
+          recipientPosition: recipient.position,
+          activeTab: tab,
+          phone: recipient.phone,
+          isLinkGenerated: tab === 'max' ? !!recipient.maxLink : false,
           isPhoneValid: recipient.phone.length > 0,
           generatedLink: recipient.maxLink,
           isSaving: false,

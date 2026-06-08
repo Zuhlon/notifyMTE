@@ -99,6 +99,7 @@ export function RecipientsSection() {
     toggleRecipientsExpanded,
     openAddRecipientModal,
     editRecipient,
+    editRecipientWithTab,
     deleteRecipient,
     openActivationPopup,
     setRecipientSearch,
@@ -216,6 +217,7 @@ export function RecipientsSection() {
                     key={recipient.id}
                     recipient={recipient}
                     onEdit={editRecipient}
+                    onEditWithTab={editRecipientWithTab}
                     onDelete={deleteRecipient}
                     onActivate={openActivationPopup}
                   />
@@ -242,6 +244,7 @@ export function RecipientsSection() {
 function RecipientRow({
   recipient,
   onEdit,
+  onEditWithTab,
   onDelete,
   onActivate,
 }: {
@@ -255,6 +258,7 @@ function RecipientRow({
     maxLink: string;
   };
   onEdit: (id: string) => void;
+  onEditWithTab: (id: string, tab: 'telegram' | 'email') => void;
   onDelete: (id: string) => void;
   onActivate: (id: string) => void;
 }) {
@@ -290,11 +294,15 @@ function RecipientRow({
                 onClick={() => {
                   if (recipient.maxStatus === 'waiting') {
                     onActivate(recipient.id);
+                  } else if (recipient.maxStatus === 'not_configured') {
+                    onEdit(recipient.id);
                   }
                 }}
                 className={`flex items-center gap-1.5 transition-all ${
                   recipient.maxStatus === 'waiting'
                     ? 'cursor-pointer hover:opacity-80 ring-1 ring-amber-300 rounded px-1.5 py-0.5'
+                    : recipient.maxStatus === 'not_configured'
+                    ? 'cursor-pointer hover:opacity-80 ring-1 ring-gray-200 rounded px-1.5 py-0.5'
                     : ''
                 }`}
               >
@@ -320,24 +328,58 @@ function RecipientRow({
               )}
             </div>
 
-            {/* Telegram */}
+            {/* Telegram - clickable when not configured */}
             <div className="relative group">
-              <div className="flex items-center gap-1.5 opacity-40">
+              <button
+                onClick={() => {
+                  if (recipient.telegramStatus === 'not_configured') {
+                    onEditWithTab(recipient.id, 'telegram');
+                  }
+                }}
+                className={`flex items-center gap-1.5 transition-all rounded px-1.5 py-0.5 ${
+                  recipient.telegramStatus === 'not_configured'
+                    ? 'opacity-50 hover:opacity-80 cursor-pointer ring-1 ring-gray-200 hover:ring-gray-300'
+                    : 'opacity-40'
+                }`}
+              >
                 <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-100">
                   <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
                 </div>
                 <span className="text-[11px] text-gray-400">не настроен</span>
-              </div>
+              </button>
+              {recipient.telegramStatus === 'not_configured' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-44">
+                  <p className="font-medium mb-1">Telegram: не настроен</p>
+                  <p className="text-gray-300">Нажмите для настройки Telegram</p>
+                </div>
+              )}
             </div>
 
-            {/* Email */}
+            {/* Email - clickable when not configured */}
             <div className="relative group">
-              <div className="flex items-center gap-1.5 opacity-40">
+              <button
+                onClick={() => {
+                  if (recipient.emailStatus === 'not_configured') {
+                    onEditWithTab(recipient.id, 'email');
+                  }
+                }}
+                className={`flex items-center gap-1.5 transition-all rounded px-1.5 py-0.5 ${
+                  recipient.emailStatus === 'not_configured'
+                    ? 'opacity-50 hover:opacity-80 cursor-pointer ring-1 ring-gray-200 hover:ring-gray-300'
+                    : 'opacity-40'
+                }`}
+              >
                 <div className="w-6 h-6 rounded flex items-center justify-center bg-gray-100">
                   <Mail className="w-3.5 h-3.5 text-gray-400" />
                 </div>
                 <span className="text-[11px] text-gray-400">не настроен</span>
-              </div>
+              </button>
+              {recipient.emailStatus === 'not_configured' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-44">
+                  <p className="font-medium mb-1">Email: не настроен</p>
+                  <p className="text-gray-300">Нажмите для настройки Email</p>
+                </div>
+              )}
             </div>
 
             {/* Spacer */}
