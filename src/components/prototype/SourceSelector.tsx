@@ -126,7 +126,7 @@ export function SourceSelector() {
 }
 
 function SourceTable() {
-  const { scenario, setEmployeeSearch, setEmployeeFilter, saveSelectedNumbers, cancelSelection } = usePrototypeStore();
+  const { scenario, setEmployeeSearch, setEmployeeFilter, saveSelectedNumbers, cancelSelection, selectAll, deselectAll } = usePrototypeStore();
 
   // Get items based on source type
   const getItems = () => {
@@ -227,6 +227,32 @@ function SourceTable() {
             Выбранные {selectedCount > 0 ? selectedCount : ''}
           </button>
         </div>
+      </div>
+
+      {/* Select all row */}
+      <div className="px-4 pt-1 pb-0.5">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <div className={`w-4 h-4 rounded flex items-center justify-center transition-all border cursor-pointer ${
+            filtered.length > 0 && filtered.every(i => i.selected)
+              ? 'bg-amber-400 border-amber-400'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+            onClick={() => {
+              const allFilteredSelected = filtered.every(i => i.selected);
+              if (allFilteredSelected) deselectAll(scenario.sourceType);
+              else selectAll(scenario.sourceType);
+            }}
+          >
+            {filtered.length > 0 && filtered.every(i => i.selected) ? (
+              <Check className="w-2.5 h-2.5 text-white" />
+            ) : (
+              <Minus className="w-2.5 h-2.5 text-gray-300" />
+            )}
+          </div>
+          <span className="text-[11px] text-gray-500 font-medium">
+            Выбрать все ({filtered.length})
+          </span>
+        </label>
       </div>
 
       {/* Table Header */}
