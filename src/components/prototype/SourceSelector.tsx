@@ -294,10 +294,10 @@ function SourceTable() {
                       )}
                     </div>
                   </div>
-                  {/* Name + Phone on one line */}
+                  {/* Phone + Name on one line */}
                   <div className="flex items-center gap-2.5 py-2.5 px-3 min-w-0">
-                    <span className="text-xs font-medium text-gray-900 truncate min-w-0">{item.name}</span>
-                    <span className="text-xs text-gray-400 font-mono flex-shrink-0">{item.code}</span>
+                    <span className="text-xs text-gray-900 font-mono flex-shrink-0">{item.code}</span>
+                    <span className="text-xs font-medium text-gray-500 truncate min-w-0">{item.name}</span>
                   </div>
                 </button>
               ))
