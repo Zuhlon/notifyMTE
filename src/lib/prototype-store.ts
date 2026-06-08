@@ -203,10 +203,18 @@ function getSourceLabel(type: SourceType, count: number): string {
 
 export { SOURCE_TYPE_LABELS, getSourceLabel };
 
+const MOBILE_PREFIXES = ['910', '912', '916', '925', '926', '929', '903', '905', '915', '977', '985', '991', '999', '930', '931', '932', '933', '937', '938', '958', '959', '963', '964', '965', '966', '967', '968', '969', '978', '992', '993', '995', '996', '997'];
+
 const MOCK_EMPLOYEES: Employee[] = Array.from({ length: 50 }, (_, i) => ({
   id: `emp-${i + 1}`,
   shortNumber: i < 4 ? '201' : i < 8 ? '202' : i < 12 ? '203' : i < 16 ? '204' : `${200 + Math.floor(i / 4)}`,
-  phone: `+7 (${900 + Math.floor(Math.random() * 99)}) ${String(Math.floor(Math.random() * 900) + 100).slice(0, 3)}-${String(Math.floor(Math.random() * 90) + 10).padStart(3, '0')}-${String(Math.floor(Math.random() * 90) + 10)}`,
+  phone: (() => {
+    const prefix = MOBILE_PREFIXES[i % MOBILE_PREFIXES.length];
+    const mid = String(100 + ((i * 37 + 13) % 900)).slice(0, 3);
+    const end1 = String(10 + ((i * 53 + 7) % 90));
+    const end2 = String(10 + ((i * 71 + 3) % 90));
+    return `+7 (${prefix}) ${mid}-${end1}-${end2}`;
+  })(),
   sip: `SIP02RBTU${String(i + 1).padStart(4, '0')}L5`,
   name: [
     'Константин Кристоводжинский',
