@@ -4,14 +4,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { usePrototypeStore, ChannelTab } from '@/lib/prototype-store';
 import {
   X,
-  Copy,
   Check,
   MessageSquare,
   Mail,
   ArrowDown,
   Share2,
   Link as LinkIcon,
-  Lock,
+  Copy,
 } from 'lucide-react';
 
 export function AddRecipientModal() {
@@ -24,7 +23,6 @@ export function AddRecipientModal() {
     setModalPhone,
     setModalTelegramAccount,
     generateMaxLink,
-    copyMaxLink,
     generateTelegramLink,
     saveRecipient,
   } = usePrototypeStore();
@@ -34,6 +32,10 @@ export function AddRecipientModal() {
   const isSaveEnabled = modal.recipientName.trim().length > 0;
   const isConnectMaxEnabled = modal.activeTab === 'max' && modal.isPhoneValid;
   const isConnectTelegramEnabled = modal.activeTab === 'telegram' && modal.isTelegramInputValid;
+
+  // Is there a generated link for the active tab?
+  const hasActiveLink = (modal.activeTab === 'max' && modal.isLinkGenerated)
+    || (modal.activeTab === 'telegram' && modal.isTelegramLinkGenerated);
 
   // Format phone as user types: (XXX) XXX-XX-XX
   const handlePhoneChange = (value: string) => {
@@ -72,6 +74,13 @@ export function AddRecipientModal() {
   ];
 
   const modalTitle = modal.editingRecipientId ? 'Редактирование получателя' : 'Настройки получателя уведомлений';
+
+  // Footer button label
+  const saveLabel = hasActiveLink
+    ? 'Сохранить и скопировать ссылку'
+    : modal.editingRecipientId
+    ? 'Сохранить'
+    : 'Добавить получателя';
 
   return (
     <div className="fixed inset-0 z-50">
@@ -162,7 +171,6 @@ export function AddRecipientModal() {
                   generatedLink={modal.generatedLink}
                   onPhoneChange={handlePhoneChange}
                   onGenerateLink={generateMaxLink}
-                  onCopyLink={copyMaxLink}
                   isConnectEnabled={isConnectMaxEnabled}
                 />
               )}
@@ -194,13 +202,14 @@ export function AddRecipientModal() {
           <button
             onClick={saveRecipient}
             disabled={!isSaveEnabled}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
               isSaveEnabled
                 ? 'bg-amber-400 text-gray-900 hover:bg-amber-500'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            Сохранить
+            {hasActiveLink && <Copy className="w-4 h-4" />}
+            {saveLabel}
           </button>
         </div>
       </div>
@@ -216,7 +225,6 @@ function MaxTabContent({
   generatedLink,
   onPhoneChange,
   onGenerateLink,
-  onCopyLink,
   isConnectEnabled,
 }: {
   phone: string;
@@ -224,17 +232,8 @@ function MaxTabContent({
   generatedLink: string;
   onPhoneChange: (v: string) => void;
   onGenerateLink: () => void;
-  onCopyLink: () => void;
   isConnectEnabled: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    onCopyLink();
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div className="space-y-4">
       {/* Instruction Block */}
@@ -289,39 +288,17 @@ function MaxTabContent({
         </button>
       )}
 
-      {/* Link Section (after generation) */}
+      {/* Link Preview (after generation) */}
       {isLinkGenerated && (
         <div className="space-y-3">
           <div className="flex items-start gap-2">
-            <LinkIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-600">
-              Сохраните данные получателя и отправьте ему ссылку для подключения:
+              Ссылка сгенерирована. Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — данные получателя сохранятся, а ссылка скопируется в буфер обмена.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
-              {generatedLink}
-            </div>
-            <button
-              onClick={handleCopy}
-              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                copied
-                  ? 'bg-green-50 text-green-700 border border-green-200'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  Скопировано
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  Скопировать ссылку
-                </>
-              )}
-            </button>
+          <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+            {generatedLink}
           </div>
         </div>
       )}
@@ -346,16 +323,6 @@ function TelegramTabContent({
   onGenerateLink: () => void;
   isConnectEnabled: boolean;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = () => {
-    if (generatedLink) {
-      navigator.clipboard?.writeText(generatedLink).catch(() => {});
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Instruction Block */}
@@ -408,36 +375,17 @@ function TelegramTabContent({
         </button>
       )}
 
-      {/* Link Section (after generation) — copy is disabled until saved */}
+      {/* Link Preview (after generation) */}
       {isLinkGenerated && (
         <div className="space-y-3">
           <div className="flex items-start gap-2">
-            <LinkIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-600">
-              Ссылка для подключения Telegram. Сохраните данные получателя, чтобы получить
-              возможность скопировать ссылку:
+              Ссылка сгенерирована. Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — данные получателя сохранятся, а ссылка скопируется в буфер обмена.
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
-              {generatedLink}
-            </div>
-            {/* Copy disabled — only available after save via activation popup */}
-            <button
-              disabled
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed flex-shrink-0"
-              title="Сначала сохраните данные получателя"
-            >
-              <Lock className="w-4 h-4" />
-              Сохраните для копирования
-            </button>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-            <Lock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-            <p className="text-[11px] text-amber-700 leading-relaxed">
-              Нажмите «Сохранить» ниже. После сохранения ссылка будет доступна для копирования
-              при нажатии на статус «Ожидает» в таблице получателей.
-            </p>
+          <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+            {generatedLink}
           </div>
         </div>
       )}

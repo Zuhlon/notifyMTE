@@ -560,6 +560,14 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       return;
     }
 
+    // Copy link to clipboard if generated
+    const linkToCopy = state.modal.activeTab === 'telegram' && state.modal.generatedTelegramLink
+      ? state.modal.generatedTelegramLink
+      : state.modal.generatedLink;
+    if (linkToCopy) {
+      navigator.clipboard?.writeText(linkToCopy).catch(() => {});
+    }
+
     const isEditing = !!state.modal.editingRecipientId;
     const resetModal = {
       isOpen: false,
@@ -577,6 +585,13 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       generatedTelegramLink: '',
       isTelegramInputValid: false,
     };
+
+    // Determine toast message
+    const channelLabel = state.modal.activeTab === 'telegram' ? 'Telegram' : 'МАКС';
+    const hasLink = !!linkToCopy;
+    const toastMessage = hasLink
+      ? `Ссылка скопирована, ${channelLabel} подключён`
+      : isEditing ? 'Получатель обновлён' : 'Получатель добавлен';
 
     if (isEditing) {
       // Update existing recipient — preserve channel statuses that are already 'active'
@@ -605,6 +620,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
           showSavedNotification: true,
         },
         modal: resetModal,
+        toast: { message: toastMessage, visible: true },
       }));
     } else {
       // Create new recipient
@@ -634,10 +650,12 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
             : sc
         ),
         modal: resetModal,
+        toast: { message: toastMessage, visible: true },
       }));
     }
     setTimeout(() => set((s) => ({
       scenario: { ...s.scenario, showSavedNotification: false },
+      toast: { message: '', visible: false },
     })), 3000);
   },
   resetModal: () => set({
