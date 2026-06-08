@@ -587,10 +587,9 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     };
 
     // Determine toast message
-    const channelLabel = state.modal.activeTab === 'telegram' ? 'Telegram' : 'МАКС';
     const hasLink = !!linkToCopy;
     const toastMessage = hasLink
-      ? `Ссылка скопирована, ${channelLabel} подключён`
+      ? 'Ссылка скопирована. Отправьте её получателю'
       : isEditing ? 'Получатель обновлён' : 'Получатель добавлен';
 
     if (isEditing) {
