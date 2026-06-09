@@ -284,7 +284,7 @@ export function ServicesPage() {
               {cardExpanded && (
                 <div className="border-t border-gray-100">
                   {/* Table Header */}
-                  <div className="grid grid-cols-[36px_180px_120px_1fr_160px_140px_36px] gap-0 px-7 py-3 bg-gray-50/80 text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                  <div className="grid grid-cols-[36px_minmax(140px,1fr)_repeat(4,minmax(140px,1fr))_36px] gap-x-4 px-7 py-3 bg-gray-50/80 text-[11px] font-semibold text-gray-400 uppercase tracking-wider border-b border-gray-100">
                     <span></span>
                     <span>Название</span>
                     <span>Источник</span>
@@ -299,7 +299,7 @@ export function ServicesPage() {
                     {scenariosWithData.map(sc => (
                       <div
                         key={sc.id}
-                        className="grid grid-cols-[36px_180px_120px_1fr_160px_140px_36px] gap-0 px-7 py-4 hover:bg-blue-50/30 transition-colors items-center group"
+                        className="grid grid-cols-[36px_minmax(140px,1fr)_repeat(4,minmax(140px,1fr))_36px] gap-x-4 px-7 py-4 hover:bg-blue-50/30 transition-colors items-center group"
                       >
                         {/* Checkbox */}
                         <div className="flex items-center justify-center">
