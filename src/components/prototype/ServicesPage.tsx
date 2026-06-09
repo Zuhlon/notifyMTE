@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { usePrototypeStore, SOURCE_TYPE_LABELS } from '@/lib/prototype-store';
 import type { ConnectionStatus } from '@/lib/prototype-store';
+import { CJTracker } from '@/components/prototype/CJTracker';
 import {
   CheckCircle2,
   Phone,
@@ -117,6 +118,8 @@ export function ServicesPage() {
     navigateToPrototype,
     addScenario,
     deleteScenario,
+    cjHidden,
+    toggleCJHidden,
   } = usePrototypeStore();
 
   const [activeTab, setActiveTab] = useState('Контроль звонков');
@@ -197,9 +200,20 @@ export function ServicesPage() {
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
+          {/* CJ Tracker */}
+          <CJTracker />
+
           {/* Header */}
-          <div className="px-8 pt-8 pb-2">
+          <div className="px-8 pt-6 pb-2 flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-gray-900">Услуги</h1>
+            {cjHidden && (
+              <button
+                onClick={toggleCJHidden}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors bg-transparent border-0 cursor-pointer p-0"
+              >
+                Показать CJ
+              </button>
+            )}
           </div>
 
           {/* Category Tabs */}
