@@ -8,13 +8,16 @@ import { AddRecipientModal } from '@/components/prototype/AddRecipientModal';
 import { ActivationPopup } from '@/components/prototype/ActivationPopup';
 import { CJTracker } from '@/components/prototype/CJTracker';
 import { Toast } from '@/components/prototype/Toast';
+import { ServicesPage } from '@/components/prototype/ServicesPage';
 import {
   X,
   HelpCircle,
+  ArrowLeft,
 } from 'lucide-react';
 
 export default function PrototypePage() {
   const {
+    viewMode,
     scenario,
     toast,
     dismissToast,
@@ -28,6 +31,7 @@ export default function PrototypePage() {
     closeActivationPopup,
     cjHidden,
     toggleCJHidden,
+    navigateToServices,
   } = usePrototypeStore();
 
   const [showGuide, setShowGuide] = useState(false);
@@ -43,31 +47,47 @@ export default function PrototypePage() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showGuide]);
 
+  // ── Services View ──
+  if (viewMode === 'services') {
+    return <ServicesPage />;
+  }
+
+  // ── Prototype View ──
   return (
     <div className="min-h-screen bg-[#F3F4F6] font-sans">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <Tooltip text="Назад к услугам">
+            <button
+              onClick={navigateToServices}
+              className="flex items-center gap-1 text-gray-500 hover:text-gray-900 transition-colors text-sm bg-transparent border-0 cursor-pointer p-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </Tooltip>
           <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
             <div className="w-2 h-2 bg-white rounded-full" />
           </div>
           <h1 className="text-lg font-semibold text-gray-900">Уведомления о пропущенных</h1>
         </div>
-        <button
-          onClick={closeAll}
-          className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors text-sm"
-        >
-          <X className="w-4 h-4" />
-          Закрыть
-        </button>
-        {cjHidden && (
+        <div className="flex items-center gap-2">
+          {cjHidden && (
+            <button
+              onClick={toggleCJHidden}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors bg-transparent border-0 cursor-pointer p-0"
+            >
+              Показать CJ
+            </button>
+          )}
           <button
-            onClick={toggleCJHidden}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 transition-colors"
+            onClick={closeAll}
+            className="flex items-center gap-1.5 text-gray-600 hover:text-gray-900 transition-colors text-sm bg-transparent border-0 cursor-pointer p-0"
           >
-            Показать CJ
+            <X className="w-4 h-4" />
+            Закрыть
           </button>
-        )}
+        </div>
       </header>
 
       {/* CJ Tracker */}
@@ -82,7 +102,7 @@ export default function PrototypePage() {
             <div className="relative" ref={guideRef}>
               <button
                 onClick={() => setShowGuide(v => !v)}
-                className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                className="flex items-center gap-1 text-sm text-blue-600 hover:underline bg-transparent border-0 cursor-pointer p-0"
               >
                 <HelpCircle className="w-4 h-4" />
                 Как настроить
@@ -91,7 +111,7 @@ export default function PrototypePage() {
                 <div className="absolute right-0 top-full mt-2 w-[380px] bg-white rounded-xl shadow-lg border border-gray-200 z-50 p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-semibold text-gray-900">Настройка уведомлений</h3>
-                    <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600">
+                    <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 bg-transparent border-0 cursor-pointer p-0">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -158,6 +178,26 @@ export default function PrototypePage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           <span className="text-sm font-medium">Сценарий сохранён</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Inline tooltip component for prototype page
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      className="relative inline-flex"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 bg-gray-900 text-white text-[11px] font-medium rounded-lg whitespace-nowrap z-50 shadow-lg pointer-events-none">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-gray-900" />
         </div>
       )}
     </div>

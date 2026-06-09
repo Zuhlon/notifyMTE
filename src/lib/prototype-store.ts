@@ -95,8 +95,11 @@ export interface CJStep {
   comment: string;
 }
 
+export type ViewMode = 'services' | 'prototype';
+
 interface PrototypeStore {
   // Main state
+  viewMode: ViewMode;
   scenarios: ScenarioListItem[];
   activeScenarioId: string;
   scenario: Scenario;
@@ -178,6 +181,8 @@ interface PrototypeStore {
 
   // Navigation
   closeAll: () => void;
+  navigateToServices: () => void;
+  navigateToPrototype: (scenarioId: string) => void;
 }
 
 function pluralize(n: number, one: string, few: string, many: string): string {
@@ -287,6 +292,7 @@ const initialScenarios: ScenarioListItem[] = [
 const initialScenario = createDefaultScenario('scenario-3', 'Новый сценарий');
 
 export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
+  viewMode: 'services' as ViewMode,
   scenarios: initialScenarios,
   activeScenarioId: 'scenario-3',
   scenario: initialScenario,
@@ -930,7 +936,20 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   })),
 
   // Navigation
-  closeAll: () => set((s) => ({
-    scenario: { ...s.scenario, showSavedNotification: false },
-  })),
+  closeAll: () => set({ viewMode: 'services' as ViewMode, scenario: { ...get().scenario, showSavedNotification: false } }),
+  navigateToServices: () => set({ viewMode: 'services' as ViewMode }),
+  navigateToPrototype: (scenarioId) => {
+    const state = get();
+    // Save current scenario state
+    const updatedStates = { ...state.scenarioStates };
+    updatedStates[state.activeScenarioId] = state.scenario;
+    // Load target scenario or create default
+    let target = updatedStates[scenarioId];
+    if (!target) {
+      const listItem = state.scenarios.find(s => s.id === scenarioId);
+      target = createDefaultScenario(scenarioId, listItem?.name || 'Новый', listItem?.sourceType || 'employee_numbers');
+      updatedStates[scenarioId] = target;
+    }
+    set({ viewMode: 'prototype' as ViewMode, activeScenarioId: scenarioId, scenario: target, scenarioStates: updatedStates });
+  },
 }));
