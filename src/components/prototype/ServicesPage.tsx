@@ -345,14 +345,23 @@ export function ServicesPage() {
                         </div>
 
                         {/* Recipients */}
-                        <div className="text-[13px] text-gray-500 truncate pr-4 flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${sc.recipientCount > 0 ? 'bg-green-500' : 'bg-red-400'}`} />
+                        <div className="text-[13px] text-gray-500 truncate pr-4 flex items-center flex-wrap gap-x-3 gap-y-1">
                           {sc.recipientCount > 0
-                            ? <Tooltip text={sc.recipientNames.join(', ')}>
-                                <span className="cursor-default truncate">
-                                  {sc.recipientNames.slice(0, 2).join(', ')}{sc.recipientCount > 2 && <span className="text-gray-400"> +{sc.recipientCount - 2}</span>}
-                                </span>
-                              </Tooltip>
+                            ? (() => {
+                                const state = scenarioStates[sc.id];
+                                const recips = state?.recipients || [];
+                                return recips.map((r, i) => {
+                                  const configured = r.maxStatus !== 'not_configured' || r.telegramStatus !== 'not_configured';
+                                  return (
+                                    <Tooltip key={r.id} text={`${r.name}${r.maxStatus === 'active' ? ' · MAX' : ''}${r.telegramStatus === 'active' ? ' · Telegram' : ''}`}>
+                                      <span className="inline-flex items-center gap-[4px] cursor-default">
+                                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${configured ? 'bg-green-500' : 'bg-red-400'}`} />
+                                        <span className="truncate">{r.name}{i < recips.length - 1 && ','}</span>
+                                      </span>
+                                    </Tooltip>
+                                  );
+                                });
+                              })()
                             : <span className="text-gray-300">—</span>
                           }
                         </div>
