@@ -366,10 +366,21 @@ export function ServicesPage() {
                         </div>
 
                         {/* Row actions */}
-                        <div className="flex items-center justify-end">
-                          <Tooltip text="Действия">
-                            <button className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 opacity-0 group-hover:opacity-100 hover:text-gray-600 hover:bg-gray-100 transition-all">
-                              <MoreHorizontal className="w-4 h-4" />
+                        <div className="flex items-center gap-1 justify-end">
+                          <Tooltip text="Редактировать">
+                            <button
+                              onClick={() => navigateToPrototype(sc.id)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                            >
+                              <Settings className="w-3.5 h-3.5" />
+                            </button>
+                          </Tooltip>
+                          <Tooltip text="Удалить">
+                            <button
+                              onClick={() => setDeleteConfirmId(sc.id)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </Tooltip>
                         </div>
