@@ -395,12 +395,14 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
 
   // CJ tracker
   cjSteps: [
+    { id: 'navigate', label: 'Переход к настройкам', emotion: '', comment: '' },
     { id: 'source', label: 'Выбор источника', emotion: '', comment: '' },
     { id: 'numbers', label: 'Выбор номеров', emotion: '', comment: '' },
     { id: 'recipient', label: 'Добавление получателя', emotion: '', comment: '' },
     { id: 'link', label: 'Генерация ссылки', emotion: '', comment: '' },
     { id: 'save', label: 'Сохранение и копирование', emotion: '', comment: '' },
     { id: 'activate', label: 'Подтверждение подключения', emotion: '', comment: '' },
+    { id: 'return', label: 'Возврат на страницу Услуги', emotion: '', comment: '' },
   ],
   cjExpandedStep: null,
   cjCollapsed: false,
@@ -502,7 +504,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     scenarios: s.scenarios.map(sc =>
       sc.id === s.activeScenarioId ? { ...sc, sourceType: type, selectedCount: 0 } : sc
     ),
-    ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'source' }),
+    ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'navigate' }),
   })),
   toggleSourceCollapsed: () => set((s) => ({
     scenario: { ...s.scenario, isSourceCollapsed: !s.scenario.isSourceCollapsed },
@@ -1006,8 +1008,21 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   })),
 
   // Navigation
-  closeAll: () => set({ viewMode: 'services' as ViewMode, scenario: { ...get().scenario, showSavedNotification: false } }),
-  navigateToServices: () => set({ viewMode: 'services' as ViewMode }),
+  closeAll: () => {
+    const s = get();
+    set({
+      viewMode: 'services' as ViewMode,
+      scenario: { ...s.scenario, showSavedNotification: false },
+      ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'return' }),
+    });
+  },
+  navigateToServices: () => {
+    const s = get();
+    set({
+      viewMode: 'services' as ViewMode,
+      ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'return' }),
+    });
+  },
   navigateToPrototype: (scenarioId) => {
     const state = get();
     // Save current scenario state
@@ -1020,6 +1035,12 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       target = createDefaultScenario(scenarioId, listItem?.name || 'Новый', listItem?.sourceType || 'employee_numbers');
       updatedStates[scenarioId] = target;
     }
-    set({ viewMode: 'prototype' as ViewMode, activeScenarioId: scenarioId, scenario: target, scenarioStates: updatedStates });
+    set({
+      viewMode: 'prototype' as ViewMode,
+      activeScenarioId: scenarioId,
+      scenario: target,
+      scenarioStates: updatedStates,
+      ...(!state.cjHidden && state.cjCollapsed ? {} : { cjExpandedStep: 'navigate' }),
+    });
   },
 }));
