@@ -345,10 +345,11 @@ export function ServicesPage() {
                         </div>
 
                         {/* Recipients */}
-                        <div className="text-[13px] text-gray-500 truncate pr-4">
+                        <div className="text-[13px] text-gray-500 truncate pr-4 flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${sc.recipientCount > 0 ? 'bg-green-500' : 'bg-red-400'}`} />
                           {sc.recipientCount > 0
                             ? <Tooltip text={sc.recipientNames.join(', ')}>
-                                <span className="cursor-default">
+                                <span className="cursor-default truncate">
                                   {sc.recipientNames.slice(0, 2).join(', ')}{sc.recipientCount > 2 && <span className="text-gray-400"> +{sc.recipientCount - 2}</span>}
                                 </span>
                               </Tooltip>
