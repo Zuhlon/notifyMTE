@@ -471,6 +471,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       activeScenarioId: newId,
       scenario: newScenario,
       scenarioStates: updatedStates,
+      viewMode: 'prototype' as ViewMode,
     });
   },
   renameScenario: (name) => set((s) => ({
