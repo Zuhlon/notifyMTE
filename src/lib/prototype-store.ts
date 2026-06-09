@@ -289,6 +289,71 @@ const initialScenarios: ScenarioListItem[] = [
   { id: 'scenario-3', name: 'Новый сценарий', sourceType: 'employee_numbers', selectedCount: 0, recipientCount: 0 },
 ];
 
+function createInitialScenario1(): Scenario {
+  const sc = createDefaultScenario('scenario-1', 'Продажи', 'employee_numbers');
+  sc.isNumbersSaved = true;
+  sc.isSourceCollapsed = true;
+  sc.isRecipientsExpanded = true;
+  sc.isScenarioSaved = true;
+  // Select first 5 employees
+  sc.employees = sc.employees.map((e, i) => ({ ...e, selected: i < 5 }));
+  sc.recipients = [
+    {
+      id: 'r-1-1',
+      name: 'Александр Петров',
+      position: 'Менеджер продаж',
+      phone: '916 245-10-00',
+      maxStatus: 'active',
+      telegramStatus: 'not_configured',
+      emailStatus: 'not_configured',
+      maxLink: 'https://max.bot/start?phone=79162451000',
+      telegramAccount: '',
+      telegramLink: '',
+      activeTab: 'max',
+    },
+    {
+      id: 'r-1-2',
+      name: 'Мария Иванова',
+      position: 'Руководитель отдела',
+      phone: '925 310-20-00',
+      maxStatus: 'not_configured',
+      telegramStatus: 'active',
+      emailStatus: 'not_configured',
+      maxLink: '',
+      telegramAccount: '@maria_iv',
+      telegramLink: 'https://t.me/mte_notify_bot?start=link_a1b2c3d4',
+      activeTab: 'telegram',
+    },
+  ];
+  return sc;
+}
+
+function createInitialScenario2(): Scenario {
+  const sc = createDefaultScenario('scenario-2', 'Поддержка', 'multi_channel');
+  sc.isNumbersSaved = true;
+  sc.isSourceCollapsed = true;
+  sc.isRecipientsExpanded = true;
+  sc.isScenarioSaved = true;
+  // Select first 3 multi-channel numbers
+  sc.multiChannelNumbers = sc.multiChannelNumbers.map((e, i) => ({ ...e, selected: i < 3 }));
+  sc.recipients = [
+    {
+      id: 'r-2-1',
+      name: 'Дмитрий Сидоров',
+      position: 'Специалист техподдержки',
+      phone: '903 120-30-00',
+      maxStatus: 'active',
+      telegramStatus: 'active',
+      emailStatus: 'not_configured',
+      maxLink: 'https://max.bot/start?phone=79031203000',
+      telegramAccount: '@dmitry_s',
+      telegramLink: 'https://t.me/mte_notify_bot?start=link_a1b2c3d4',
+      activeTab: 'max',
+    },
+  ];
+  return sc;
+}
+
 const initialScenario = createDefaultScenario('scenario-3', 'Новый сценарий');
 
 export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
@@ -296,7 +361,11 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
   scenarios: initialScenarios,
   activeScenarioId: 'scenario-3',
   scenario: initialScenario,
-  scenarioStates: { 'scenario-3': initialScenario },
+  scenarioStates: {
+    'scenario-1': createInitialScenario1(),
+    'scenario-2': createInitialScenario2(),
+    'scenario-3': initialScenario,
+  },
   modal: {
     isOpen: false,
     editingRecipientId: null,

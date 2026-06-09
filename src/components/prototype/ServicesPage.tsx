@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { usePrototypeStore, SOURCE_TYPE_LABELS } from '@/lib/prototype-store';
+import type { ConnectionStatus } from '@/lib/prototype-store';
 import {
   CheckCircle2,
   Phone,
@@ -16,6 +17,7 @@ import {
   Send,
   Cloud,
   Mic,
+  Zap,
 } from 'lucide-react';
 
 const SOURCE_TYPE_LABEL: Record<string, string> = {
@@ -42,6 +44,24 @@ function pluralizeScenario(n: number): string {
   return `${n} сценариев`;
 }
 
+function pluralizeNumber(n: number): string {
+  const abs = Math.abs(n);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} номер`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} номера`;
+  return `${n} номеров`;
+}
+
+function pluralizeRecipient(n: number): string {
+  const abs = Math.abs(n);
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} получатель`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} получателя`;
+  return `${n} получателей`;
+}
+
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
   const [show, setShow] = useState(false);
   return (
@@ -61,6 +81,43 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
   );
 }
 
+function ChannelBadge({ channel, status }: { channel: 'MAX' | 'Telegram'; status: ConnectionStatus }) {
+  const isActive = status === 'active';
+  const isWaiting = status === 'waiting';
+
+  if (channel === 'MAX') {
+    return (
+      <Tooltip text={isActive ? 'МАКС подключён' : isWaiting ? 'МАКС ожидает подключения' : 'МАКС не настроен'}>
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+          isActive
+            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+            : isWaiting
+            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+            : 'bg-gray-50 text-gray-400 border border-gray-200'
+        }`}>
+          <Zap className="w-3 h-3" />
+          MAX
+        </span>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip text={isActive ? 'Telegram подключён' : isWaiting ? 'Telegram ожидает подключения' : 'Telegram не настроен'}>
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+        isActive
+          ? 'bg-sky-50 text-sky-700 border border-sky-200'
+          : isWaiting
+          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+          : 'bg-gray-50 text-gray-400 border border-gray-200'
+      }`}>
+        <MessageCircle className="w-3 h-3" />
+        Telegram
+      </span>
+    </Tooltip>
+  );
+}
+
 export function ServicesPage() {
   const {
     scenarios,
@@ -75,15 +132,45 @@ export function ServicesPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const totalScenarios = scenarios.length;
+
+  // Enrich each scenario with full state data
   const scenariosWithData = scenarios.map(sc => {
     const state = scenarioStates[sc.id];
+    const recipients = state?.recipients || [];
+
+    // Determine which channels are used across all recipients
+    const hasMax = recipients.some(r => r.maxStatus !== 'not_configured');
+    const hasTelegram = recipients.some(r => r.telegramStatus !== 'not_configured');
+
+    // Get selected items for display
+    const selectedItems = (() => {
+      if (!state) return [];
+      switch (state.sourceType) {
+        case 'employee_numbers': return state.employees.filter(e => e.selected);
+        case 'multi_channel': return state.multiChannelNumbers.filter(e => e.selected);
+        case 'departments': return state.departments.filter(e => e.selected);
+        case 'call_centers': return state.callCenters.filter(e => e.selected);
+      }
+    })();
+
     return {
       ...sc,
-      hasRecipients: (sc.recipientCount > 0),
-      recipientNames: state?.recipients?.slice(0, 3).map(r => r.telegramAccount || r.name).filter(Boolean) || [],
-      recipientCount: sc.recipientCount,
-      selectedNumbers: state?.isNumbersSaved ? sc.selectedCount : 0,
-      sourceType: sc.sourceType,
+      hasMax,
+      hasTelegram,
+      maxStatus: hasMax
+        ? recipients.find(r => r.maxStatus === 'active') ? 'active' as ConnectionStatus : 'waiting' as ConnectionStatus
+        : 'not_configured' as ConnectionStatus,
+      telegramStatus: hasTelegram
+        ? recipients.find(r => r.telegramStatus === 'active') ? 'active' as ConnectionStatus : 'waiting' as ConnectionStatus
+        : 'not_configured' as ConnectionStatus,
+      recipientNames: recipients.map(r => r.name).filter(Boolean),
+      recipientCount: recipients.length,
+      selectedCount: selectedItems.length,
+      selectedLabels: selectedItems.slice(0, 2).map(item =>
+        'phone' in item && item.phone
+          ? `${item.shortNumber || item.code} · ${item.name}`
+          : `${item.code} · ${item.name}`
+      ),
     };
   });
 
@@ -203,12 +290,13 @@ export function ServicesPage() {
               {cardExpanded && (
                 <div className="border-t border-gray-100">
                   {/* Table Header */}
-                  <div className="grid grid-cols-[40px_1fr_140px_180px_160px_80px] gap-0 px-6 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                  <div className="grid grid-cols-[40px_1fr_130px_190px_160px_130px_80px] gap-0 px-6 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
                     <span></span>
                     <span>Название</span>
                     <span>Источник</span>
                     <span>Названия или номера</span>
                     <span>Получатели</span>
+                    <span>Каналы</span>
                     <span></span>
                   </div>
 
@@ -216,7 +304,7 @@ export function ServicesPage() {
                   {scenariosWithData.map(sc => (
                     <div
                       key={sc.id}
-                      className="grid grid-cols-[40px_1fr_140px_180px_160px_80px] gap-0 px-6 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors items-center"
+                      className="grid grid-cols-[40px_1fr_130px_190px_160px_130px_80px] gap-0 px-6 py-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors items-center"
                     >
                       {/* Checkbox */}
                       <div className="flex items-center justify-center">
@@ -234,17 +322,48 @@ export function ServicesPage() {
                       {/* Source */}
                       <span className="text-xs text-gray-500 truncate">{SOURCE_TYPE_LABEL[sc.sourceType] || sc.sourceType}</span>
 
-                      {/* Numbers */}
-                      <span className="text-xs text-gray-400 truncate">
-                        {sc.selectedNumbers > 0 ? `${sc.selectedNumbers} номер(ов)` : '—'}
-                      </span>
+                      {/* Numbers / Names */}
+                      <div className="text-xs text-gray-500 truncate">
+                        {sc.selectedCount > 0 ? (
+                          <Tooltip text={
+                            (() => {
+                              const state = scenarioStates[sc.id];
+                              if (!state) return '';
+                              const items = (() => {
+                                switch (state.sourceType) {
+                                  case 'employee_numbers': return state.employees.filter(e => e.selected).map(e => `${e.shortNumber} · ${e.name}`);
+                                  case 'multi_channel': return state.multiChannelNumbers.filter(e => e.selected).map(e => `${e.code} · ${e.name}`);
+                                  case 'departments': return state.departments.filter(e => e.selected).map(e => `${e.code} · ${e.name}`);
+                                  case 'call_centers': return state.callCenters.filter(e => e.selected).map(e => `${e.code} · ${e.name}`);
+                                }
+                              })().join('\n');
+                              return items;
+                            })()
+                          }>
+                            <span className="cursor-default">
+                              {pluralizeNumber(sc.selectedCount)}
+                            </span>
+                          </Tooltip>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </div>
 
                       {/* Recipients */}
                       <span className="text-xs text-gray-500 truncate">
                         {sc.recipientCount > 0
-                          ? sc.recipientNames.slice(0, 2).join(', ') + (sc.recipientCount > 2 ? ` (+ещё ${sc.recipientCount - 2})` : '')
+                          ? sc.recipientNames.slice(0, 2).join(', ') + (sc.recipientCount > 2 ? ` (+${sc.recipientCount - 2})` : '')
                           : '—'}
                       </span>
+
+                      {/* Channels */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {sc.hasMax && <ChannelBadge channel="MAX" status={sc.maxStatus} />}
+                        {sc.hasTelegram && <ChannelBadge channel="Telegram" status={sc.telegramStatus} />}
+                        {!sc.hasMax && !sc.hasTelegram && (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-1 justify-end">
