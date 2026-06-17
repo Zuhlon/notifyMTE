@@ -217,26 +217,10 @@ export function RecipientsSection() {
     setConfirmBulkDelete(false);
   };
 
-  const headerRef = React.useRef<HTMLDivElement>(null);
-  const [tooltipPos, setTooltipPos] = React.useState<{ top: number; left: number } | null>(null);
-
-  React.useEffect(() => {
-    if (!isDisabled || !headerRef.current) {
-      setTooltipPos(null);
-      return;
-    }
-    const rect = headerRef.current.getBoundingClientRect();
-    setTooltipPos({
-      top: rect.bottom + 6,
-      left: rect.left + rect.width / 2,
-    });
-  }, [isDisabled, isExpanded]);
-
   return (
-    <div className="relative">
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden transition-opacity ${isDisabled ? 'opacity-60' : ''}`}>
       {/* Section Header */}
-      <div ref={headerRef}>
+      <div>
         <button
           onClick={isDisabled ? undefined : toggleRecipientsExpanded}
           disabled={isDisabled}
@@ -260,6 +244,12 @@ export function RecipientsSection() {
               {!isExpanded && !isDisabled && recipients.length > 0 && (
                 <p className="text-[11px] text-gray-500">
                   {recipients.length} {recipients.length === 1 ? 'получатель' : recipients.length < 5 ? 'получателя' : 'получателей'}
+                </p>
+              )}
+              {isDisabled && (
+                <p className="text-[11px] text-amber-600 mt-0.5 flex items-center gap-1">
+                  <Info className="w-3 h-3 flex-shrink-0" />
+                  Сохраните блок Источник пропущенных для добавления получателей
                 </p>
               )}
             </div>
@@ -405,18 +395,6 @@ export function RecipientsSection() {
       )}
     </div>
 
-    {/* Tooltip for disabled state — rendered outside overflow-hidden via fixed positioning */}
-    {isDisabled && tooltipPos && (
-      <div
-        className="fixed z-[100] flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap pointer-events-none"
-        style={{ top: tooltipPos.top, left: tooltipPos.left, transform: 'translateX(-50%)' }}
-      >
-        <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-        <span>Сохраните блок Источник пропущенных для добавления получателей</span>
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
-      </div>
-    )}
-    </div>
   );
 }
 
