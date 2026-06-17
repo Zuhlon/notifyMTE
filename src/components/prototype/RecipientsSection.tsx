@@ -252,8 +252,9 @@ export function RecipientsSection() {
 
         {/* Tooltip for disabled state */}
         {isDisabled && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-3 py-1.5 bg-gray-900 text-white text-[11px] rounded-lg opacity-100 whitespace-nowrap z-50 pointer-events-none">
-            Сначала выберите и сохраните источник пропущенных
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none">
+            <Info className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+            <span>Сохраните блок Источник пропущенных для добавления получателей</span>
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45 -mb-1" />
           </div>
         )}
@@ -270,7 +271,7 @@ export function RecipientsSection() {
               </p>
               <button
                 onClick={openAddRecipientModal}
-                className="flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-sm font-medium transition-colors"
+                className="relative flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-sm font-medium transition-all shadow-md shadow-amber-400/30 ring-2 ring-amber-400/50 animate-pulse-subtle"
               >
                 <Plus className="w-4 h-4" />
                 Добавить получателя

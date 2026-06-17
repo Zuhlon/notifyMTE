@@ -133,3 +133,16 @@
 .animate-slide-in {
   animation: slide-in 0.25s ease-out;
 }
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    box-shadow: 0 4px 14px 0 rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 24px 4px rgba(251, 191, 36, 0.45);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
