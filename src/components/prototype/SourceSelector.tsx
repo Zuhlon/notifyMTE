@@ -59,9 +59,10 @@ export function SourceSelector() {
         ) : (
           <ChevronDown className="w-4 h-4 text-gray-400" />
         )}
+        <span className="w-5 h-5 rounded-full bg-amber-400 text-gray-900 text-[11px] font-bold flex items-center justify-center flex-shrink-0">2</span>
         <div className="text-left">
-            <h3 className="text-sm font-medium text-gray-900">Выберите источник пропущенных</h3>
-            <p className="text-[11px] text-gray-500">Откуда отслеживать пропущенные вызовы</p>
+            <h3 className="text-sm font-medium text-gray-900">Источник пропущенных вызовов</h3>
+            <p className="text-[11px] text-gray-400">Какие номера, отделы или колл-центры отслеживать — по ним будут приходить уведомления о пропущенных</p>
           </div>
         {scenario.isSourceCollapsed && scenario.isNumbersSaved && selectedCount > 0 && (
           <span className="ml-auto text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">

@@ -234,13 +234,12 @@ export function RecipientsSection() {
             <ChevronRight className="w-4 h-4 text-gray-400" />
           )}
           <div className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
-              isDisabled ? 'bg-gray-100' : 'bg-purple-50'
-            }`}>
-              <Users className={`w-3.5 h-3.5 ${isDisabled ? 'text-gray-400' : 'text-purple-600'}`} />
-            </div>
+            <span className="w-5 h-5 rounded-full bg-amber-400 text-gray-900 text-[11px] font-bold flex items-center justify-center flex-shrink-0">3</span>
             <div className="text-left">
               <h3 className="text-sm font-medium text-gray-900">Получатели уведомлений</h3>
+              {!isDisabled && (
+                <p className="text-[11px] text-gray-400">Настройте мессенджер и отправьте получателю ссылку для подключения</p>
+              )}
               {!isExpanded && !isDisabled && recipients.length > 0 && (
                 <p className="text-[11px] text-gray-500">
                   {recipients.length} {recipients.length === 1 ? 'получатель' : recipients.length < 5 ? 'получателя' : 'получателей'}
