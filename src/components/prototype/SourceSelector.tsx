@@ -330,7 +330,7 @@ function SourceTable() {
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              Сохранить
+              Использовать выбранные номера сотрудников
             </button>
           </div>
         </div>
@@ -488,7 +488,7 @@ function SourceTable() {
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              Сохранить
+              Использовать выбранные наборы номеров
             </button>
           </div>
         </div>
@@ -638,7 +638,7 @@ function SourceTable() {
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            Сохранить
+            {scenario.sourceType === 'departments' ? 'Использовать выбранные подразделения' : 'Использовать выбранные колл-центры'}
           </button>
         </div>
       </div>
