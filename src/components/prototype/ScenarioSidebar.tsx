@@ -12,11 +12,28 @@ import {
 export function ScenarioSidebar() {
   const {
     scenarios,
+    scenarioStates,
     activeScenarioId,
     selectScenario,
     addScenario,
     deleteScenario,
   } = usePrototypeStore();
+
+  const hasActiveRecipient = (scenarioId: string) => {
+    const state = scenarioStates[scenarioId];
+    if (!state) return false;
+    return state.recipients.some(
+      (r) => r.maxStatus === 'active' || r.telegramStatus === 'active'
+    );
+  };
+
+  const hasWaitingRecipient = (scenarioId: string) => {
+    const state = scenarioStates[scenarioId];
+    if (!state) return false;
+    return state.recipients.some(
+      (r) => r.maxStatus === 'waiting' || r.telegramStatus === 'waiting'
+    );
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -77,10 +94,17 @@ export function ScenarioSidebar() {
             {/* Status indicator */}
             {sc.recipientCount > 0 && sc.id === activeScenarioId && (
               <div className="mt-1.5">
-                <div className="flex items-center gap-1 text-xs text-green-600">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  Активен
-                </div>
+                {hasActiveRecipient(sc.id) ? (
+                  <div className="flex items-center gap-1 text-xs text-green-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    Активен
+                  </div>
+                ) : hasWaitingRecipient(sc.id) ? (
+                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Ожидает подтверждения
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
