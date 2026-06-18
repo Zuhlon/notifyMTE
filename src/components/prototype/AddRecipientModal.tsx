@@ -542,6 +542,14 @@ function MaxTabContent({
       {/* ── Editing: connected status + link + copy ── */}
       {showConnectedView && (
         <>
+          {/* Phone info */}
+          {phone && (
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+              <span className="text-xs text-gray-500 flex-shrink-0">Телефон:</span>
+              <span className="text-sm font-medium text-gray-900">{phone}</span>
+            </div>
+          )}
+
           {/* Status badge */}
           <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg ${
             currentStatus === 'active'
@@ -669,6 +677,14 @@ function TelegramTabContent({
       {/* ── Editing: connected status + link + copy ── */}
       {showConnectedView && (
         <>
+          {/* Account info */}
+          {account && (
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-200">
+              <span className="text-xs text-gray-500 flex-shrink-0">{account.startsWith('@') ? 'Аккаунт:' : 'Телефон:'}</span>
+              <span className="text-sm font-medium text-gray-900">{account}</span>
+            </div>
+          )}
+
           {/* Status badge */}
           <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg ${
             currentStatus === 'active'
