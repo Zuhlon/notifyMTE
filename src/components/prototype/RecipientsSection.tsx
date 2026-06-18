@@ -162,9 +162,20 @@ export function RecipientsSection() {
   const recipients = scenario.recipients;
   const isExpanded = scenario.isRecipientsExpanded;
   const isNumbersSaved = scenario.isNumbersSaved;
-
-  // Always render, but disable when no numbers saved
   const isDisabled = !isNumbersSaved;
+
+  const [clickHint, setClickHint] = React.useState(false);
+  const hintTimer = React.useRef<ReturnType<typeof setTimeout>>();
+
+  const handleHeaderClick = () => {
+    if (isDisabled) {
+      setClickHint(true);
+      clearTimeout(hintTimer.current);
+      hintTimer.current = setTimeout(() => setClickHint(false), 2500);
+      return;
+    }
+    toggleRecipientsExpanded();
+  };
 
   const allActive = recipients.length > 0 && recipients.every((r) => r.maxStatus === 'active' && r.telegramStatus === 'active');
   const anyWaiting = recipients.some((r) => r.maxStatus === 'waiting' || r.telegramStatus === 'waiting');
@@ -218,14 +229,14 @@ export function RecipientsSection() {
   };
 
   return (
+    <div className="relative">
     <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden transition-opacity ${isDisabled ? 'opacity-60' : ''}`}>
       {/* Section Header */}
       <div>
         <button
-          onClick={isDisabled ? undefined : toggleRecipientsExpanded}
-          disabled={isDisabled}
+          onClick={handleHeaderClick}
           className={`w-full flex items-center gap-2.5 px-4 py-3 transition-colors ${
-            isDisabled ? 'cursor-not-allowed' : 'hover:bg-gray-50'
+            isDisabled ? 'cursor-pointer' : 'hover:bg-gray-50'
           }`}
         >
           {isExpanded && !isDisabled ? (
@@ -393,6 +404,18 @@ export function RecipientsSection() {
         />
       )}
     </div>
+
+    {/* Click hint — floating above the card */}
+    {clickHint && (
+      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-[11px] rounded-lg shadow-lg whitespace-nowrap">
+          <Info className="w-3 h-3 text-amber-400 flex-shrink-0" />
+          Выберите источник для отслеживания и сохраните
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-2 h-2 bg-gray-900 rotate-45" />
+        </div>
+      </div>
+    )}
+  </div>
 
   );
 }

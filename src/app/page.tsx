@@ -171,13 +171,17 @@ export default function PrototypePage() {
       {/* Toast */}
       <Toast message={toast.message} visible={toast.visible} onDismiss={dismissToast} />
 
-      {/* Saved Notification Bar */}
+      {/* Saved Notification */}
       {scenario.showSavedNotification && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white px-6 py-3 flex items-center justify-center gap-3 z-40">
-          <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <span className="text-sm font-medium">Сценарий сохранён</span>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-center gap-3 px-6 py-3.5 bg-green-600 text-white rounded-2xl shadow-2xl shadow-green-600/30">
+            <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span className="text-sm font-semibold">Сценарий сохранён</span>
+          </div>
         </div>
       )}
     </div>
