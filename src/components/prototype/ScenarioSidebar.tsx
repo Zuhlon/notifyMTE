@@ -57,7 +57,7 @@ export function ScenarioSidebar() {
                 </button>
               </div>
             </div>
-            <div className="flex items-center gap-3 mt-1.5">
+            <div className="mt-1.5 space-y-0.5">
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Phone className="w-3 h-3" />
                 <span>

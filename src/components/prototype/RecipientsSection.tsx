@@ -16,6 +16,7 @@ import {
   Info,
   AlertTriangle,
   X,
+  Copy,
 } from 'lucide-react';
 
 function MaxIcon({ status }: { status: ConnectionStatus }) {
@@ -447,6 +448,26 @@ function RecipientRow({
   onDelete: () => void;
   onActivate: (id: string, channel: 'max' | 'telegram') => void;
 }) {
+  const [copiedChannel, setCopiedChannel] = React.useState<'max' | 'telegram' | null>(null);
+  const copiedTimer = React.useRef<ReturnType<typeof setTimeout>>();
+
+  const handleCopyLink = (channel: 'max' | 'telegram') => {
+    const link = channel === 'max' ? recipient.maxLink : recipient.telegramLink;
+    if (link) navigator.clipboard?.writeText(link);
+    setCopiedChannel(channel);
+    clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopiedChannel(null), 2500);
+  };
+
+  const handleChannelClick = (channel: 'max' | 'telegram') => {
+    const status = channel === 'max' ? recipient.maxStatus : recipient.telegramStatus;
+    if (status === 'waiting') {
+      handleCopyLink(channel);
+    } else if (status === 'not_configured') {
+      if (channel === 'max') onEdit(recipient.id);
+      else onEditWithTab(recipient.id, 'telegram');
+    }
+  };
   // Determine overall status indicator from max + telegram
   const hasAnyActive = recipient.maxStatus === 'active' || recipient.telegramStatus === 'active';
   const hasAnyWaiting = recipient.maxStatus === 'waiting' || recipient.telegramStatus === 'waiting';
@@ -491,13 +512,7 @@ function RecipientRow({
             {/* MAX Channel - clickable if waiting or not_configured */}
             <div className="relative group">
               <button
-                onClick={() => {
-                  if (recipient.maxStatus === 'waiting') {
-                    onActivate(recipient.id, 'max');
-                  } else if (recipient.maxStatus === 'not_configured') {
-                    onEdit(recipient.id);
-                  }
-                }}
+                onClick={() => handleChannelClick('max')}
                 className={`flex items-center gap-1.5 transition-all ${
                   recipient.maxStatus === 'waiting'
                     ? 'cursor-pointer hover:opacity-80 ring-1 ring-amber-300 rounded px-1.5 py-0.5'
@@ -509,13 +524,18 @@ function RecipientRow({
                 <MaxIcon status={recipient.maxStatus} />
               </button>
               {/* Tooltip */}
-              {recipient.maxStatus === 'waiting' && (
-                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-52">
-                  <p className="font-medium mb-1">МАКС: Ожидает</p>
-                  <p className="text-gray-300 leading-relaxed">
-                    Получатель ещё не перешёл по ссылке для активации подписки в мессенджере МАКС.
-                    Нажмите, чтобы промоделировать подключение.
-                  </p>
+              {recipient.maxStatus === 'waiting' && !copiedChannel && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50">
+                  <p className="font-medium mb-0.5">МАКС: Ожидает</p>
+                  <p className="text-gray-300 leading-relaxed">Скопировать ссылку для отправки пользователю</p>
+                </div>
+              )}
+              {recipient.maxStatus === 'waiting' && copiedChannel === 'max' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-green-600 text-white text-[11px] rounded-lg whitespace-normal pointer-events-none z-50 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Ссылка скопирована, отправьте получателю, чтобы он по ней перешёл и активировал подписку на уведомления</span>
+                  </div>
                 </div>
               )}
               {recipient.maxStatus === 'active' && (
@@ -537,13 +557,7 @@ function RecipientRow({
             {/* Telegram Channel - clickable if waiting or not_configured */}
             <div className="relative group">
               <button
-                onClick={() => {
-                  if (recipient.telegramStatus === 'waiting') {
-                    onActivate(recipient.id, 'telegram');
-                  } else if (recipient.telegramStatus === 'not_configured') {
-                    onEditWithTab(recipient.id, 'telegram');
-                  }
-                }}
+                onClick={() => handleChannelClick('telegram')}
                 className={`flex items-center gap-1.5 transition-all ${
                   recipient.telegramStatus === 'waiting'
                     ? 'cursor-pointer hover:opacity-80 ring-1 ring-amber-300 rounded px-1.5 py-0.5'
@@ -557,13 +571,18 @@ function RecipientRow({
                 <TelegramIcon status={recipient.telegramStatus} />
               </button>
               {/* Tooltip */}
-              {recipient.telegramStatus === 'waiting' && (
-                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50 w-52">
-                  <p className="font-medium mb-1">Telegram: Ожидает</p>
-                  <p className="text-gray-300 leading-relaxed">
-                    Получатель ещё не перешёл по ссылке для активации подписки в Telegram.
-                    Нажмите, чтобы промоделировать подключение.
-                  </p>
+              {recipient.telegramStatus === 'waiting' && !copiedChannel && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-[11px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal pointer-events-none z-50">
+                  <p className="font-medium mb-0.5">Telegram: Ожидает</p>
+                  <p className="text-gray-300 leading-relaxed">Скопировать ссылку для отправки пользователю</p>
+                </div>
+              )}
+              {recipient.telegramStatus === 'waiting' && copiedChannel === 'telegram' && (
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-green-600 text-white text-[11px] rounded-lg whitespace-normal pointer-events-none z-50 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>Ссылка скопирована, отправьте получателю, чтобы он по ней перешёл и активировал подписку на уведомления</span>
+                  </div>
                 </div>
               )}
               {recipient.telegramStatus === 'active' && (

@@ -321,7 +321,7 @@ function MaxTabContent({
           <div className="flex items-start gap-2">
             <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-600">
-              Ссылка сгенерирована. Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — данные получателя сохранятся, а ссылка скопируется в буфер обмена.
+              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу, затем отправьте её получателю для подключения.
             </p>
           </div>
           <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
@@ -426,7 +426,7 @@ function TelegramTabContent({
           <div className="flex items-start gap-2">
             <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-600">
-              Ссылка сгенерирована. Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — данные получателя сохранятся, а ссылка скопируется в буфер обмена.
+              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу, затем отправьте её получателю для подключения.
             </p>
           </div>
           <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
