@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { usePrototypeStore, ChannelTab } from '@/lib/prototype-store';
+import React, { useMemo, useState, useRef } from 'react';
+import { usePrototypeStore, ChannelTab, Recipient } from '@/lib/prototype-store';
 import {
   X,
   Check,
@@ -10,11 +10,18 @@ import {
   Share2,
   Copy,
   Unplug,
+  Plus,
+  UserPlus,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 
 export function AddRecipientModal() {
   const {
     modal,
+    scenario,
+    scenarioStates,
+    activeScenarioId,
     closeRecipientModal,
     setModalRecipientName,
     setModalRecipientPosition,
@@ -25,20 +32,93 @@ export function AddRecipientModal() {
     generateTelegramLink,
     saveRecipient,
     disconnectChannel,
+    importRecipientFromOtherScenario,
     modal: { editingMaxStatus, editingTelegramStatus },
   } = usePrototypeStore();
 
-  if (!modal.isOpen) return null;
+  const [quickAddSearch, setQuickAddSearch] = useState('');
+  const [showQuickAdd, setShowQuickAdd] = useState(true);
 
+  const isEditing = !!modal.editingRecipientId;
   const isSaveEnabled = modal.recipientName.trim().length > 0;
   const isConnectMaxEnabled = modal.activeTab === 'max' && modal.isPhoneValid;
   const isConnectTelegramEnabled = modal.activeTab === 'telegram' && modal.isTelegramInputValid;
-
-  // Is there a generated link for the active tab?
   const hasActiveLink = (modal.activeTab === 'max' && modal.isLinkGenerated)
     || (modal.activeTab === 'telegram' && modal.isTelegramLinkGenerated);
 
-  // Format phone as user types: (XXX) XXX-XX-XX
+  // ── Recipients from other scenarios ──
+  const otherRecipients = useMemo(() => {
+    const result: { recipient: Recipient; scenarioName: string }[] = [];
+    const seen = new Set<string>();
+    for (const [sid, state] of Object.entries(scenarioStates)) {
+      if (sid === activeScenarioId) continue;
+      for (const r of state.recipients) {
+        const key = `${r.phone.replace(/\D/g, '')}:${r.telegramAccount.toLowerCase().trim()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        result.push({ recipient: r, scenarioName: state.name });
+      }
+    }
+    return result;
+  }, [scenarioStates, activeScenarioId]);
+
+  const filteredOtherRecipients = useMemo(() => {
+    if (!quickAddSearch.trim()) return otherRecipients;
+    const q = quickAddSearch.toLowerCase();
+    return otherRecipients.filter(
+      (r) =>
+        r.recipient.name.toLowerCase().includes(q) ||
+        r.recipient.phone.replace(/\D/g, '').includes(q.replace(/\D/g, '')) ||
+        r.recipient.telegramAccount.toLowerCase().includes(q) ||
+        r.scenarioName.toLowerCase().includes(q)
+    );
+  }, [otherRecipients, quickAddSearch]);
+
+  const hasOtherRecipients = otherRecipients.length > 0;
+
+  // ── Duplicate detection on phone / telegram input ──
+  const allExistingRecipients = useMemo(() => {
+    const all: Recipient[] = [...scenario.recipients];
+    for (const state of Object.values(scenarioStates)) {
+      all.push(...state.recipients);
+    }
+    return all;
+  }, [scenario.recipients, scenarioStates]);
+
+  const duplicateRecipient = useMemo(() => {
+    if (isEditing) return null;
+    const digits = modal.phone.replace(/\D/g, '');
+    const tg = modal.telegramAccount.toLowerCase().trim();
+    if (!digits && !tg) return null;
+    return allExistingRecipients.find((r) => {
+      const rDigits = r.phone.replace(/\D/g, '');
+      const rTg = r.telegramAccount.toLowerCase().trim();
+      return (digits && rDigits && digits.length >= 3 && digits === rDigits) || (tg && rTg && tg === rTg);
+    });
+  }, [modal.phone, modal.telegramAccount, allExistingRecipients, isEditing]);
+
+  const duplicateScenarioName = useMemo(() => {
+    if (!duplicateRecipient) return '';
+    for (const [sid, state] of Object.entries(scenarioStates)) {
+      if (state.recipients.some((r) => r.id === duplicateRecipient.id)) return state.name;
+    }
+    return scenario.name;
+  }, [duplicateRecipient, scenarioStates, scenario.name]);
+
+  if (!modal.isOpen) return null;
+
+  const applyDuplicate = () => {
+    if (!duplicateRecipient) return;
+    setModalRecipientName(duplicateRecipient.name);
+    setModalRecipientPosition(duplicateRecipient.position);
+    setModalPhone(duplicateRecipient.phone);
+    setModalTelegramAccount(duplicateRecipient.telegramAccount);
+    if (duplicateRecipient.maxStatus !== 'not_configured') {
+      setModalActiveTab('max');
+    }
+  };
+
+  // ── Phone formatter ──
   const handlePhoneChange = (value: string) => {
     const digits = value.replace(/\D/g, '');
     if (digits.length === 0) {
@@ -74,24 +154,21 @@ export function AddRecipientModal() {
     },
   ];
 
-  const modalTitle = modal.editingRecipientId ? 'Редактирование получателя' : 'Настройки получателя уведомлений';
+  const modalTitle = isEditing ? 'Редактирование получателя' : 'Настройки получателя уведомлений';
 
-  // Footer button label
   const saveLabel = hasActiveLink
     ? 'Сохранить и скопировать ссылку'
-    : modal.editingRecipientId
+    : isEditing
     ? 'Сохранить'
     : 'Добавить получателя';
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/30 transition-opacity"
         onClick={closeRecipientModal}
       />
 
-      {/* Side Sheet */}
       <div className="absolute right-0 top-0 bottom-0 w-full max-w-[480px] bg-white shadow-2xl flex flex-col animate-slide-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
@@ -106,6 +183,109 @@ export function AddRecipientModal() {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          {/* ── Quick Add from Other Scenarios (only when adding new) ── */}
+          {!isEditing && hasOtherRecipients && (
+            <div>
+              <button
+                onClick={() => setShowQuickAdd((v) => !v)}
+                className="flex items-center gap-2 w-full text-left mb-2"
+              >
+                <UserPlus className="w-4 h-4 text-indigo-500" />
+                <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Быстрое добавление
+                </span>
+                <span className="text-[10px] text-gray-400 bg-gray-100 rounded-full px-1.5 py-0.5">
+                  {otherRecipients.length}
+                </span>
+                <span className="text-[10px] text-gray-400 ml-auto">{showQuickAdd ? 'свернуть' : 'развернуть'}</span>
+              </button>
+
+              {showQuickAdd && (
+                <>
+                  {/* Search */}
+                  <div className="relative mb-2">
+                    <input
+                      type="text"
+                      placeholder="Поиск по имени, номеру, сценарию..."
+                      value={quickAddSearch}
+                      onChange={(e) => setQuickAddSearch(e.target.value)}
+                      className="w-full pl-3 pr-3 py-2 rounded-lg border border-gray-200 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 bg-gray-50"
+                    />
+                  </div>
+
+                  {/* Recipient list */}
+                  <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                    {filteredOtherRecipients.length === 0 && (
+                      <p className="text-xs text-gray-400 text-center py-2">Ничего не найдено</p>
+                    )}
+                    {filteredOtherRecipients.map(({ recipient: r, scenarioName }) => (
+                      <button
+                        key={r.id}
+                        onClick={() => importRecipientFromOtherScenario(r)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 transition-colors text-left group"
+                      >
+                        {/* Avatar */}
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          r.maxStatus === 'active' || r.telegramStatus === 'active'
+                            ? 'bg-green-50'
+                            : 'bg-gray-100'
+                        }`}>
+                          <span className={`text-[10px] font-medium ${
+                            r.maxStatus === 'active' || r.telegramStatus === 'active'
+                              ? 'text-green-700'
+                              : 'text-gray-600'
+                          }`}>
+                            {r.name.charAt(0)}
+                          </span>
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-gray-900 truncate">{r.name}</span>
+                            {r.position && (
+                              <span className="text-[10px] text-gray-400 truncate">— {r.position}</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-gray-400 truncate">{scenarioName}</span>
+                            {/* Channel badges */}
+                            {r.maxStatus !== 'not_configured' && (
+                              <span className={`text-[9px] font-medium px-1.5 py-px rounded ${
+                                r.maxStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                М
+                              </span>
+                            )}
+                            {r.telegramStatus !== 'not_configured' && (
+                              <span className={`text-[9px] font-medium px-1.5 py-px rounded ${
+                                r.telegramStatus === 'active' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                TG
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Add icon */}
+                        <Plus className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Divider when both sections visible */}
+          {!isEditing && hasOtherRecipients && (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-[10px] text-gray-400 uppercase tracking-wider">или введите вручную</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+          )}
+
           {/* Step 1 — Имя получателя */}
           <div className="flex items-start gap-2.5">
             <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
@@ -165,7 +345,6 @@ export function AddRecipientModal() {
                     )}
                   </button>
                 ))}
-                {/* Share icon on the right */}
                 <div className="ml-auto pr-2">
                   <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
                     <Share2 className="w-4 h-4" />
@@ -184,7 +363,7 @@ export function AddRecipientModal() {
                     onGenerateLink={generateMaxLink}
                     isConnectEnabled={isConnectMaxEnabled}
                     currentStatus={editingMaxStatus}
-                    isEditing={!!modal.editingRecipientId}
+                    isEditing={isEditing}
                     onDisconnect={() => disconnectChannel('max')}
                   />
                 )}
@@ -197,7 +376,7 @@ export function AddRecipientModal() {
                     onGenerateLink={generateTelegramLink}
                     isConnectEnabled={isConnectTelegramEnabled}
                     currentStatus={editingTelegramStatus}
-                    isEditing={!!modal.editingRecipientId}
+                    isEditing={isEditing}
                     onDisconnect={() => disconnectChannel('telegram')}
                   />
                 )}
@@ -207,6 +386,31 @@ export function AddRecipientModal() {
               </div>
             </div>
           </div>
+
+          {/* ── Duplicate Detection Banner ── */}
+          {duplicateRecipient && (
+            <div className="flex items-start gap-3 px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl">
+              <AlertCircle className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-indigo-900 mb-0.5">
+                  Найден получатель: {duplicateRecipient.name}
+                </p>
+                <p className="text-[11px] text-indigo-600 mb-2">
+                  {duplicateRecipient.position && `${duplicateRecipient.position}, `}
+                  {duplicateScenarioName}
+                  {duplicateRecipient.maxStatus !== 'not_configured' && ' · МАКС подключен'}
+                  {duplicateRecipient.telegramStatus !== 'not_configured' && ' · Telegram подключен'}
+                </p>
+                <button
+                  onClick={applyDuplicate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium rounded-lg transition-colors"
+                >
+                  <UserPlus className="w-3 h-3" />
+                  Использовать эти данные
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -255,6 +459,58 @@ function InstructionStepper({ steps }: { steps: string[] }) {
   );
 }
 
+/* ─── Link Copy Button ───────────────────────────────────── */
+
+function CopyLinkButton({ link, channel }: { link: string; channel: 'max' | 'telegram' }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  const handleCopy = () => {
+    const messengerName = channel === 'telegram' ? 'Telegram' : 'МАКС';
+    const step3Action = channel === 'telegram'
+      ? 'В открывшемся боте нажмите «Start» для активации подписки на уведомления'
+      : 'В чат-боте подтвердите подписку на уведомления';
+    const textToCopy = [
+      `Подключение уведомлений о пропущенных через ${messengerName}`,
+      '',
+      `Ссылка для подключения:`,
+      link,
+      '',
+      `Инструкция для получателя:`,
+      `1. Откройте ${messengerName} на телефоне`,
+      `2. Перейдите по ссылке выше`,
+      `3. ${step3Action}`,
+    ].join('\n');
+    navigator.clipboard?.writeText(textToCopy).catch(() => {});
+    setCopied(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), 2500);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+        copied
+          ? 'bg-green-50 text-green-700 border border-green-200'
+          : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+      }`}
+    >
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5" />
+          Скопировано
+        </>
+      ) : (
+        <>
+          <Copy className="w-3.5 h-3.5" />
+          Скопировать ссылку
+        </>
+      )}
+    </button>
+  );
+}
+
 /* ─── MAX Tab ────────────────────────────────────────────── */
 
 function MaxTabContent({
@@ -279,67 +535,104 @@ function MaxTabContent({
   onDisconnect: () => void;
 }) {
   const isConnected = currentStatus === 'active' || currentStatus === 'waiting';
+  const showConnectedView = isEditing && isConnected;
 
   return (
     <div className="space-y-3">
-      {/* Attractive instruction stepper */}
-      <InstructionStepper steps={['1. Номер', '2. Подключить', '3. Отправить ссылку']} />
-
-      {/* Phone Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Номер телефона <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="tel"
-          value={phone}
-          onChange={(e) => onPhoneChange(e.target.value)}
-          placeholder="(XXX) XXX-XX-XX"
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-        />
-      </div>
-
-      {/* Connect / Disconnect Button — same visual slot */}
-      {!isLinkGenerated && !isConnected && (
-        <button
-          onClick={onGenerateLink}
-          disabled={!isConnectEnabled}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isConnectEnabled
-              ? 'bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50'
-              : 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-          }`}
-        >
-          <div className="w-5 h-5 rounded bg-amber-400 flex items-center justify-center text-[9px] font-bold text-white">
-            M
+      {/* ── Editing: connected status + link + copy ── */}
+      {showConnectedView && (
+        <>
+          {/* Status badge */}
+          <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg ${
+            currentStatus === 'active'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-amber-50 border border-amber-200'
+          }`}>
+            {currentStatus === 'active' ? (
+              <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+            ) : (
+              <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            )}
+            <span className={`text-sm font-medium ${
+              currentStatus === 'active' ? 'text-green-700' : 'text-amber-700'
+            }`}>
+              {currentStatus === 'active' ? 'Подключен' : 'Ожидает подтверждения'}
+            </span>
           </div>
-          Подключить МАКС
-        </button>
+
+          {/* Link + Copy */}
+          {generatedLink && (
+            <div className="space-y-2">
+              <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+                {generatedLink}
+              </div>
+              <CopyLinkButton link={generatedLink} channel="max" />
+            </div>
+          )}
+
+          {/* Disconnect */}
+          <button
+            onClick={onDisconnect}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-colors w-full"
+          >
+            <Unplug className="w-4 h-4" />
+            Отключить МАКС
+          </button>
+        </>
       )}
 
-      {isConnected && (
-        <button
-          onClick={onDisconnect}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-colors w-full"
-        >
-          <Unplug className="w-4 h-4" />
-          Отключить МАКС
-        </button>
-      )}
+      {/* ── Normal flow: not editing or not connected ── */}
+      {!showConnectedView && (
+        <>
+          <InstructionStepper steps={['1. Номер', '2. Подключить', '3. Отправить ссылку']} />
 
-      {/* Link Preview (after generation) */}
-      {isLinkGenerated && (
-        <div className="space-y-3">
-          <div className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-gray-600">
-              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — ссылка и инструкция скопируются в буфер. Отправьте получателю.
-            </p>
+          {/* Phone Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Номер телефона <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => onPhoneChange(e.target.value)}
+              placeholder="(XXX) XXX-XX-XX"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+            />
           </div>
-          <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
-            {generatedLink}
-          </div>
-        </div>
+
+          {/* Connect Button */}
+          {!isLinkGenerated && (
+            <button
+              onClick={onGenerateLink}
+              disabled={!isConnectEnabled}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isConnectEnabled
+                  ? 'bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50'
+                  : 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+              }`}
+            >
+              <div className="w-5 h-5 rounded bg-amber-400 flex items-center justify-center text-[9px] font-bold text-white">
+                M
+              </div>
+              Подключить МАКС
+            </button>
+          )}
+
+          {/* Link Preview (after generation) */}
+          {isLinkGenerated && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-gray-600">
+                  Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — ссылка и инструкция скопируются в буфер. Отправьте получателю.
+                </p>
+              </div>
+              <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+                {generatedLink}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -369,65 +662,102 @@ function TelegramTabContent({
   onDisconnect: () => void;
 }) {
   const isConnected = currentStatus === 'active' || currentStatus === 'waiting';
+  const showConnectedView = isEditing && isConnected;
 
   return (
     <div className="space-y-3">
-      {/* Attractive instruction stepper */}
-      <InstructionStepper steps={['1. Аккаунт', '2. Подключить', '3. Отправить ссылку']} />
+      {/* ── Editing: connected status + link + copy ── */}
+      {showConnectedView && (
+        <>
+          {/* Status badge */}
+          <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg ${
+            currentStatus === 'active'
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-amber-50 border border-amber-200'
+          }`}>
+            {currentStatus === 'active' ? (
+              <Check className="w-4 h-4 text-green-600 flex-shrink-0" />
+            ) : (
+              <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            )}
+            <span className={`text-sm font-medium ${
+              currentStatus === 'active' ? 'text-green-700' : 'text-amber-700'
+            }`}>
+              {currentStatus === 'active' ? 'Подключен' : 'Ожидает подтверждения'}
+            </span>
+          </div>
 
-      {/* Telegram Account Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
-          Номер или Telegram-аккаунт <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={account}
-          onChange={(e) => onAccountChange(e.target.value)}
-          placeholder="@username или номер телефона"
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-        />
-      </div>
+          {/* Link + Copy */}
+          {generatedLink && (
+            <div className="space-y-2">
+              <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+                {generatedLink}
+              </div>
+              <CopyLinkButton link={generatedLink} channel="telegram" />
+            </div>
+          )}
 
-      {/* Connect / Disconnect Button — same visual slot */}
-      {!isLinkGenerated && !isConnected && (
-        <button
-          onClick={onGenerateLink}
-          disabled={!isConnectEnabled}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isConnectEnabled
-              ? 'bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50'
-              : 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          Подключить Telegram
-        </button>
+          {/* Disconnect */}
+          <button
+            onClick={onDisconnect}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-colors w-full"
+          >
+            <Unplug className="w-4 h-4" />
+            Отключить Telegram
+          </button>
+        </>
       )}
 
-      {isConnected && (
-        <button
-          onClick={onDisconnect}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-colors w-full"
-        >
-          <Unplug className="w-4 h-4" />
-          Отключить Telegram
-        </button>
-      )}
+      {/* ── Normal flow: not editing or not connected ── */}
+      {!showConnectedView && (
+        <>
+          <InstructionStepper steps={['1. Аккаунт', '2. Подключить', '3. Отправить ссылку']} />
 
-      {/* Link Preview (after generation) */}
-      {isLinkGenerated && (
-        <div className="space-y-3">
-          <div className="flex items-start gap-2">
-            <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-gray-600">
-              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — ссылка и инструкция скопируются в буфер. Отправьте получателю.
-            </p>
+          {/* Telegram Account Input */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Номер или Telegram-аккаунт <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={account}
+              onChange={(e) => onAccountChange(e.target.value)}
+              placeholder="@username или номер телефона"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+            />
           </div>
-          <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
-            {generatedLink}
-          </div>
-        </div>
+
+          {/* Connect Button */}
+          {!isLinkGenerated && (
+            <button
+              onClick={onGenerateLink}
+              disabled={!isConnectEnabled}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isConnectEnabled
+                  ? 'bg-white text-gray-900 border-2 border-gray-900 hover:bg-gray-50'
+                  : 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Подключить Telegram
+            </button>
+          )}
+
+          {/* Link Preview (after generation) */}
+          {isLinkGenerated && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-gray-600">
+                  Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — ссылка и инструкция скопируются в буфер. Отправьте получателю.
+                </p>
+              </div>
+              <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
+                {generatedLink}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

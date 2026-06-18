@@ -304,7 +304,7 @@ export function RecipientsSection() {
                 </div>
                 <button
                   onClick={openAddRecipientModal}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-gray-900 text-xs font-medium transition-colors shadow-sm shadow-amber-400/20"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Добавить
@@ -373,6 +373,17 @@ export function RecipientsSection() {
                     onActivate={openActivationPopup}
                   />
                 ))}
+              </div>
+
+              {/* Prominent Add Button - bottom of list */}
+              <div className="px-4 pt-2 pb-1">
+                <button
+                  onClick={openAddRecipientModal}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-sm font-medium transition-all shadow-md shadow-amber-400/25"
+                >
+                  <Plus className="w-4 h-4" />
+                  Добавить получателя
+                </button>
               </div>
 
               {/* Status Bar - only shows success indicator */}

@@ -166,6 +166,9 @@ interface PrototypeStore {
   deleteRecipient: (id: string) => void;
   deleteRecipients: (ids: string[]) => void;
 
+  // Import recipient from another scenario
+  importRecipientFromOtherScenario: (recipient: Recipient) => void;
+
   // Activation popup
   openActivationPopup: (recipientId: string, channel: 'max' | 'telegram') => void;
   closeActivationPopup: () => void;
@@ -961,6 +964,55 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         : sc
     ),
   })),
+
+  importRecipientFromOtherScenario: (recipient) => {
+    const state = get();
+    // Check duplicate by phone digits or telegram account
+    const digits = recipient.phone.replace(/\D/g, '');
+    const tg = recipient.telegramAccount.toLowerCase().trim();
+    const alreadyExists = state.scenario.recipients.some(r => {
+      const rDigits = r.phone.replace(/\D/g, '');
+      const rTg = r.telegramAccount.toLowerCase().trim();
+      return (digits && rDigits && digits === rDigits) || (tg && rTg && tg === rTg);
+    });
+    if (alreadyExists) {
+      set({ toast: { message: 'Этот получатель уже добавлен в текущий сценарий', visible: true } });
+      setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
+      return;
+    }
+    const newRecipient: Recipient = {
+      id: `recipient-${Date.now()}`,
+      name: recipient.name,
+      position: recipient.position,
+      phone: recipient.phone,
+      maxStatus: recipient.maxStatus,
+      telegramStatus: recipient.telegramStatus,
+      emailStatus: 'not_configured' as ConnectionStatus,
+      maxLink: recipient.maxLink,
+      telegramAccount: recipient.telegramAccount,
+      telegramLink: recipient.telegramLink,
+      activeTab: recipient.activeTab,
+    };
+    set((s) => ({
+      scenario: {
+        ...s.scenario,
+        recipients: [...s.scenario.recipients, newRecipient],
+        isScenarioSaved: true,
+        showSavedNotification: true,
+      },
+      scenarios: s.scenarios.map(sc =>
+        sc.id === s.activeScenarioId
+          ? { ...sc, recipientCount: s.scenario.recipients.length + 1 }
+          : sc
+      ),
+      modal: { ...s.modal, isOpen: false },
+      toast: { message: `${recipient.name} добавлен(а) с подключёнными каналами`, visible: true },
+    }));
+    setTimeout(() => set((s) => ({
+      scenario: { ...s.scenario, showSavedNotification: false },
+      toast: { message: '', visible: false },
+    })), 3000);
+  },
 
   // Activation popup
   openActivationPopup: (recipientId, channel) => {
