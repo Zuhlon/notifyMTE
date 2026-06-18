@@ -271,45 +271,25 @@ export function RecipientsSection() {
       {/* Expanded Content */}
       {isExpanded && !isDisabled && (
         <div className="border-t border-gray-100">
-          {/* Add Recipient CTA (when no recipients) */}
-          {recipients.length === 0 && (
-            <div className="px-4 py-4">
-              <p className="text-sm text-gray-500 mb-3">
-                Добавьте получателей уведомлений
-              </p>
-              <button
-                onClick={openAddRecipientModal}
-                className="relative flex items-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-sm font-medium transition-all shadow-md shadow-amber-400/30 ring-2 ring-amber-400/50 animate-pulse-subtle"
-              >
-                <Plus className="w-4 h-4" />
-                Добавить получателя
-              </button>
+          {/* Search bar (only when recipients exist) */}
+          {recipients.length > 0 && (
+            <div className="px-4 pt-3 pb-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Поиск получателя"
+                  value={scenario.recipientSearchQuery}
+                  onChange={(e) => setRecipientSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-gray-50"
+                />
+              </div>
             </div>
           )}
 
-          {/* Recipients Table */}
+          {/* Recipients list or empty state */}
           {recipients.length > 0 && (
             <>
-              {/* Search & Add */}
-              <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Поиск получателя"
-                    value={scenario.recipientSearchQuery}
-                    onChange={(e) => setRecipientSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 bg-gray-50"
-                  />
-                </div>
-                <button
-                  onClick={openAddRecipientModal}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-gray-900 text-xs font-medium transition-colors shadow-sm shadow-amber-400/20"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Добавить
-                </button>
-              </div>
 
               {/* Inline Warning Banner - moved to top */}
               {anyWaiting && (
@@ -375,17 +355,6 @@ export function RecipientsSection() {
                 ))}
               </div>
 
-              {/* Prominent Add Button - bottom of list */}
-              <div className="px-4 pt-2 pb-1">
-                <button
-                  onClick={openAddRecipientModal}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-sm font-medium transition-all shadow-md shadow-amber-400/25"
-                >
-                  <Plus className="w-4 h-4" />
-                  Добавить получателя
-                </button>
-              </div>
-
               {/* Status Bar - only shows success indicator */}
               {allActive && (
                 <div className="px-4 py-2.5 border-t border-gray-100 flex items-center gap-3">
@@ -397,6 +366,17 @@ export function RecipientsSection() {
               )}
             </>
           )}
+
+          {/* Always-visible Add Button */}
+          <div className="px-4 py-3 border-t border-gray-100">
+            <button
+              onClick={openAddRecipientModal}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-sm font-medium transition-all shadow-md shadow-amber-400/25 ${recipients.length === 0 ? 'ring-2 ring-amber-400/50 animate-pulse-subtle' : ''}`}
+            >
+              <Plus className="w-4 h-4" />
+              Добавить получателя
+            </button>
+          </div>
         </div>
       )}
 
