@@ -408,7 +408,7 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
     { id: 'return', label: 'Возврат на страницу Услуги', emotion: '', comment: '' },
   ],
   cjExpandedStep: null,
-  cjCollapsed: false,
+  cjCollapsed: true,
   cjHidden: false,
   setStepEmotion: (stepId, emotion) => set((s) => ({
     cjSteps: s.cjSteps.map(st => st.id === stepId ? { ...st, emotion } : st),
