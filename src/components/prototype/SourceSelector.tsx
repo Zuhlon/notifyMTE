@@ -330,7 +330,7 @@ function SourceTable() {
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              Использовать выбранные номера сотрудников
+              Отслеживать выбранные номера сотрудников
             </button>
           </div>
         </div>
@@ -488,7 +488,7 @@ function SourceTable() {
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
             >
-              Использовать выбранные наборы номеров
+              Отслеживать выбранные наборы номеров
             </button>
           </div>
         </div>
@@ -638,7 +638,7 @@ function SourceTable() {
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >
-            {scenario.sourceType === 'departments' ? 'Использовать выбранные подразделения' : 'Использовать выбранные колл-центры'}
+            {scenario.sourceType === 'departments' ? 'Отслеживать выбранные подразделения' : 'Отслеживать выбранные колл-центры'}
           </button>
         </div>
       </div>
