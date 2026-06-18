@@ -720,12 +720,28 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
       return;
     }
 
-    // Copy link to clipboard if generated
-    const linkToCopy = state.modal.activeTab === 'telegram' && state.modal.generatedTelegramLink
+    // Copy link + instructions to clipboard
+    const isTelegram = state.modal.activeTab === 'telegram';
+    const linkToCopy = isTelegram && state.modal.generatedTelegramLink
       ? state.modal.generatedTelegramLink
       : state.modal.generatedLink;
     if (linkToCopy) {
-      navigator.clipboard?.writeText(linkToCopy).catch(() => {});
+      const messengerName = isTelegram ? 'Telegram' : 'МАКС';
+      const step3Action = isTelegram
+        ? 'В открывшемся боте нажмите «Start» для активации подписки на уведомления'
+        : 'В чат-боте подтвердите подписку на уведомления';
+      const textToCopy = [
+        `Подключение уведомлений о пропущенных через ${messengerName}`,
+        '',
+        `Ссылка для подключения:`,
+        linkToCopy,
+        '',
+        `Инструкция для получателя:`,
+        `1. Откройте ${messengerName} на телефоне`,
+        `2. Перейдите по ссылке выше`,
+        `3. ${step3Action}`,
+      ].join('\n');
+      navigator.clipboard?.writeText(textToCopy).catch(() => {});
     }
 
     const isEditing = !!state.modal.editingRecipientId;

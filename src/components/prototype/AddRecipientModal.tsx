@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React from 'react';
 import { usePrototypeStore, ChannelTab } from '@/lib/prototype-store';
 import {
   X,
   Check,
   MessageSquare,
   Mail,
-  ArrowDown,
   Share2,
-  Link as LinkIcon,
   Copy,
   Unplug,
 } from 'lucide-react';
@@ -107,95 +105,106 @@ export function AddRecipientModal() {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {/* User Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Имя получателя <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={modal.recipientName}
-              onChange={(e) => setModalRecipientName(e.target.value)}
-              placeholder="Введите имя"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-              autoFocus
-            />
-          </div>
-
-          {/* Position */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-              Должность <span className="text-gray-400 font-normal">(опционально)</span>
-            </label>
-            <input
-              type="text"
-              value={modal.recipientPosition}
-              onChange={(e) => setModalRecipientPosition(e.target.value)}
-              placeholder="Введите должность"
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
-            />
-          </div>
-
-          {/* Channel Tabs */}
-          <div>
-            <div className="flex items-center border-b border-gray-200">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setModalActiveTab(tab.key)}
-                  className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
-                    modal.activeTab === tab.key
-                      ? 'text-gray-900'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                  {modal.activeTab === tab.key && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400" />
-                  )}
-                </button>
-              ))}
-              {/* Share icon on the right */}
-              <div className="ml-auto pr-2">
-                <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+          {/* Step 1 — Имя получателя */}
+          <div className="flex items-start gap-2.5">
+            <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+            <div className="flex-1 min-w-0">
+              <label className="block text-[11px] font-medium text-gray-500 mb-1 uppercase tracking-wider">Имя получателя</label>
+              <p className="text-[11px] text-gray-400 mb-1.5">Укажите ФИО сотрудника для идентификации</p>
+              <input
+                type="text"
+                value={modal.recipientName}
+                onChange={(e) => setModalRecipientName(e.target.value)}
+                placeholder="Введите имя"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+                autoFocus
+              />
             </div>
+          </div>
 
-            {/* Tab Content */}
-            <div className="pt-4">
-              {modal.activeTab === 'max' && (
-                <MaxTabContent
-                  phone={modal.phone}
-                  isLinkGenerated={modal.isLinkGenerated}
-                  generatedLink={modal.generatedLink}
-                  onPhoneChange={handlePhoneChange}
-                  onGenerateLink={generateMaxLink}
-                  isConnectEnabled={isConnectMaxEnabled}
-                  currentStatus={editingMaxStatus}
-                  isEditing={!!modal.editingRecipientId}
-                  onDisconnect={() => disconnectChannel('max')}
-                />
-              )}
-              {modal.activeTab === 'telegram' && (
-                <TelegramTabContent
-                  account={modal.telegramAccount}
-                  isLinkGenerated={modal.isTelegramLinkGenerated}
-                  generatedLink={modal.generatedTelegramLink}
-                  onAccountChange={setModalTelegramAccount}
-                  onGenerateLink={generateTelegramLink}
-                  isConnectEnabled={isConnectTelegramEnabled}
-                  currentStatus={editingTelegramStatus}
-                  isEditing={!!modal.editingRecipientId}
-                  onDisconnect={() => disconnectChannel('telegram')}
-                />
-              )}
-              {modal.activeTab === 'email' && (
-                <EmailTabContent />
-              )}
+          {/* Step 2 — Должность */}
+          <div className="flex items-start gap-2.5">
+            <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+            <div className="flex-1 min-w-0">
+              <label className="block text-[11px] font-medium text-gray-500 mb-1 uppercase tracking-wider">Должность</label>
+              <p className="text-[11px] text-gray-400 mb-1.5">Опционально, для удобства навигации</p>
+              <input
+                type="text"
+                value={modal.recipientPosition}
+                onChange={(e) => setModalRecipientPosition(e.target.value)}
+                placeholder="Введите должность"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
+              />
+            </div>
+          </div>
+
+          {/* Step 3 — Канал уведомлений */}
+          <div className="flex items-start gap-2.5">
+            <span className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+            <div className="flex-1 min-w-0">
+              <label className="block text-[11px] font-medium text-gray-500 mb-1 uppercase tracking-wider">Канал уведомлений</label>
+              <p className="text-[11px] text-gray-400 mb-2">Выберите мессенджер и подключите получателя</p>
+
+              {/* Channel Tabs */}
+              <div className="flex items-center border-b border-gray-200">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setModalActiveTab(tab.key)}
+                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
+                      modal.activeTab === tab.key
+                        ? 'text-gray-900'
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                    {modal.activeTab === tab.key && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400" />
+                    )}
+                  </button>
+                ))}
+                {/* Share icon on the right */}
+                <div className="ml-auto pr-2">
+                  <button className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Tab Content */}
+              <div className="pt-3">
+                {modal.activeTab === 'max' && (
+                  <MaxTabContent
+                    phone={modal.phone}
+                    isLinkGenerated={modal.isLinkGenerated}
+                    generatedLink={modal.generatedLink}
+                    onPhoneChange={handlePhoneChange}
+                    onGenerateLink={generateMaxLink}
+                    isConnectEnabled={isConnectMaxEnabled}
+                    currentStatus={editingMaxStatus}
+                    isEditing={!!modal.editingRecipientId}
+                    onDisconnect={() => disconnectChannel('max')}
+                  />
+                )}
+                {modal.activeTab === 'telegram' && (
+                  <TelegramTabContent
+                    account={modal.telegramAccount}
+                    isLinkGenerated={modal.isTelegramLinkGenerated}
+                    generatedLink={modal.generatedTelegramLink}
+                    onAccountChange={setModalTelegramAccount}
+                    onGenerateLink={generateTelegramLink}
+                    isConnectEnabled={isConnectTelegramEnabled}
+                    currentStatus={editingTelegramStatus}
+                    isEditing={!!modal.editingRecipientId}
+                    onDisconnect={() => disconnectChannel('telegram')}
+                  />
+                )}
+                {modal.activeTab === 'email' && (
+                  <EmailTabContent />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -226,6 +235,26 @@ export function AddRecipientModal() {
   );
 }
 
+/* ─── Attractive Instruction Stepper ─────────────────────── */
+
+function InstructionStepper({ steps }: { steps: string[] }) {
+  return (
+    <div className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3.5 py-2.5 mb-3 relative overflow-hidden">
+      <div className="relative z-10 flex items-center gap-1.5 flex-wrap">
+        {steps.map((step, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <span className="text-white/40 text-xs select-none">→</span>}
+            <span className="text-[10px] text-white font-medium bg-white/15 rounded-md px-2 py-0.5 whitespace-nowrap">
+              {step}
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="absolute -right-3 -bottom-3 w-14 h-14 bg-white/10 rounded-full" />
+    </div>
+  );
+}
+
 /* ─── MAX Tab ────────────────────────────────────────────── */
 
 function MaxTabContent({
@@ -252,26 +281,9 @@ function MaxTabContent({
   const isConnected = currentStatus === 'active' || currentStatus === 'waiting';
 
   return (
-    <div className="space-y-4">
-      {/* Instruction Block */}
-      <div className="bg-blue-50 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <ArrowDown className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-sm text-blue-900 font-medium">Подключение через МАКС</p>
-            <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-              <li>Укажите номер получателя и сгенерируйте ссылку</li>
-              <li>Отправьте ссылку сотруднику</li>
-              <li>
-                Сотрудник перейдет в чат-бот, подтвердит свой номер и подписка активируется
-                автоматически
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3">
+      {/* Attractive instruction stepper */}
+      <InstructionStepper steps={['1. Номер', '2. Подключить', '3. Отправить ссылку']} />
 
       {/* Phone Input */}
       <div>
@@ -283,7 +295,7 @@ function MaxTabContent({
           value={phone}
           onChange={(e) => onPhoneChange(e.target.value)}
           placeholder="(XXX) XXX-XX-XX"
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
         />
       </div>
 
@@ -321,7 +333,7 @@ function MaxTabContent({
           <div className="flex items-start gap-2">
             <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-600">
-              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу, затем отправьте её получателю для подключения.
+              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — ссылка и инструкция скопируются в буфер. Отправьте получателю.
             </p>
           </div>
           <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
@@ -359,26 +371,9 @@ function TelegramTabContent({
   const isConnected = currentStatus === 'active' || currentStatus === 'waiting';
 
   return (
-    <div className="space-y-4">
-      {/* Instruction Block */}
-      <div className="bg-blue-50 rounded-xl p-4">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <MessageSquare className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="space-y-1.5">
-            <p className="text-sm text-blue-900 font-medium">Подключение через Telegram</p>
-            <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
-              <li>Укажите номер или Telegram-аккаунт получателя</li>
-              <li>Нажмите «Подключить Telegram» и сохраните данные получателя</li>
-              <li>
-                Отправьте ссылку получателю — он должен войти в Telegram под указанным
-                аккаунтом и перейти по ссылке для подключения
-              </li>
-            </ol>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3">
+      {/* Attractive instruction stepper */}
+      <InstructionStepper steps={['1. Аккаунт', '2. Подключить', '3. Отправить ссылку']} />
 
       {/* Telegram Account Input */}
       <div>
@@ -390,7 +385,7 @@ function TelegramTabContent({
           value={account}
           onChange={(e) => onAccountChange(e.target.value)}
           placeholder="@username или номер телефона"
-          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
+          className="w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
         />
       </div>
 
@@ -426,7 +421,7 @@ function TelegramTabContent({
           <div className="flex items-start gap-2">
             <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-600">
-              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу, затем отправьте её получателю для подключения.
+              Ссылка готова! Нажмите <span className="font-medium text-gray-900">«Сохранить и скопировать ссылку»</span> внизу — ссылка и инструкция скопируются в буфер. Отправьте получателю.
             </p>
           </div>
           <div className="px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-200 text-sm text-blue-600 font-mono truncate">
