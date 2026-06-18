@@ -253,17 +253,6 @@ function MaxTabContent({
 
   return (
     <div className="space-y-4">
-      {/* Disconnect button (only when editing & channel is configured) */}
-      {isEditing && isConnected && (
-        <button
-          onClick={onDisconnect}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors w-full"
-        >
-          <Unplug className="w-4 h-4" />
-          Отключить МАКС
-        </button>
-      )}
-
       {/* Instruction Block */}
       <div className="bg-blue-50 rounded-xl p-4">
         <div className="flex items-start gap-3">
@@ -298,8 +287,8 @@ function MaxTabContent({
         />
       </div>
 
-      {/* Connect Button (before link generation) */}
-      {!isLinkGenerated && (
+      {/* Connect / Disconnect Button — same visual slot */}
+      {!isLinkGenerated && !isConnected && (
         <button
           onClick={onGenerateLink}
           disabled={!isConnectEnabled}
@@ -313,6 +302,16 @@ function MaxTabContent({
             M
           </div>
           Подключить МАКС
+        </button>
+      )}
+
+      {isConnected && (
+        <button
+          onClick={onDisconnect}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-colors w-full"
+        >
+          <Unplug className="w-4 h-4" />
+          Отключить МАКС
         </button>
       )}
 
@@ -361,16 +360,6 @@ function TelegramTabContent({
 
   return (
     <div className="space-y-4">
-      {/* Disconnect button (only when editing & channel is configured) */}
-      {isEditing && isConnected && (
-        <button
-          onClick={onDisconnect}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors w-full"
-        >
-          <Unplug className="w-4 h-4" />
-          Отключить Telegram
-        </button>
-      )}
       {/* Instruction Block */}
       <div className="bg-blue-50 rounded-xl p-4">
         <div className="flex items-start gap-3">
@@ -405,8 +394,8 @@ function TelegramTabContent({
         />
       </div>
 
-      {/* Connect Button (before link generation) */}
-      {!isLinkGenerated && (
+      {/* Connect / Disconnect Button — same visual slot */}
+      {!isLinkGenerated && !isConnected && (
         <button
           onClick={onGenerateLink}
           disabled={!isConnectEnabled}
@@ -418,6 +407,16 @@ function TelegramTabContent({
         >
           <MessageSquare className="w-4 h-4" />
           Подключить Telegram
+        </button>
+      )}
+
+      {isConnected && (
+        <button
+          onClick={onDisconnect}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-colors w-full"
+        >
+          <Unplug className="w-4 h-4" />
+          Отключить Telegram
         </button>
       )}
 

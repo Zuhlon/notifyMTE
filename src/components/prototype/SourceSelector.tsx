@@ -59,7 +59,10 @@ export function SourceSelector() {
         ) : (
           <ChevronDown className="w-4 h-4 text-gray-400" />
         )}
-        <h3 className="text-sm font-medium text-gray-900">Выберите источник пропущенных</h3>
+        <div className="text-left">
+            <h3 className="text-sm font-medium text-gray-900">Выберите источник пропущенных</h3>
+            <p className="text-[11px] text-gray-500">Откуда отслеживать пропущенные вызовы</p>
+          </div>
         {scenario.isSourceCollapsed && scenario.isNumbersSaved && selectedCount > 0 && (
           <span className="ml-auto text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
             {SOURCE_OPTIONS.find(o => o.value === scenario.sourceType)?.label} — {selectedCount}
