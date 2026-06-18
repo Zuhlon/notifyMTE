@@ -804,6 +804,20 @@ export const usePrototypeStore = create<PrototypeStore>((set, get) => ({
         ...(!s.cjHidden && s.cjCollapsed ? {} : { cjExpandedStep: 'save' }),
       }));
     } else {
+      // Duplicate check for new recipient
+      const newPhone = state.modal.phone.replace(/\D/g, '');
+      const newTg = state.modal.telegramAccount.toLowerCase().trim();
+      const duplicateIdx = state.scenario.recipients.findIndex(r => {
+        const rPhone = r.phone.replace(/\D/g, '');
+        const rTg = r.telegramAccount.toLowerCase().trim();
+        return (newPhone && rPhone && newPhone === rPhone) || (newTg && rTg && newTg === rTg);
+      });
+      if (duplicateIdx !== -1) {
+        set({ toast: { message: 'Получатель с таким номером или Telegram-аккаунтом уже есть в этом сценарии', visible: true } });
+        setTimeout(() => set({ toast: { message: '', visible: false } }), 2500);
+        return;
+      }
+
       // Create new recipient
       const newRecipient: Recipient = {
         id: `recipient-${Date.now()}`,

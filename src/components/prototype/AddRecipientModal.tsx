@@ -50,17 +50,25 @@ export function AddRecipientModal() {
   const otherRecipients = useMemo(() => {
     const result: { recipient: Recipient; scenarioName: string }[] = [];
     const seen = new Set<string>();
+    // Collect existing phones/tg in current scenario for exclusion
+    const currentPhones = new Set(scenario.recipients.map(r => r.phone.replace(/\D/g, '')).filter(Boolean));
+    const currentTg = new Set(scenario.recipients.map(r => r.telegramAccount.toLowerCase().trim()).filter(Boolean));
     for (const [sid, state] of Object.entries(scenarioStates)) {
       if (sid === activeScenarioId) continue;
       for (const r of state.recipients) {
-        const key = `${r.phone.replace(/\D/g, '')}:${r.telegramAccount.toLowerCase().trim()}`;
+        const rPhone = r.phone.replace(/\D/g, '');
+        const rTg = r.telegramAccount.toLowerCase().trim();
+        // Skip if already in current scenario by phone or telegram
+        if (rPhone && currentPhones.has(rPhone)) continue;
+        if (rTg && currentTg.has(rTg)) continue;
+        const key = `${rPhone}:${rTg}`;
         if (seen.has(key)) continue;
         seen.add(key);
         result.push({ recipient: r, scenarioName: state.name });
       }
     }
     return result;
-  }, [scenarioStates, activeScenarioId]);
+  }, [scenarioStates, activeScenarioId, scenario.recipients]);
 
   const filteredOtherRecipients = useMemo(() => {
     if (!quickAddSearch.trim()) return otherRecipients;
