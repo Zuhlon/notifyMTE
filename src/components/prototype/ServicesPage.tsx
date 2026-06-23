@@ -440,11 +440,11 @@ export function ServicesPage() {
                   </div>
                 </div>
                 <button className="px-4 py-2 bg-gray-900 text-white text-[13px] font-medium rounded-lg hover:bg-gray-800 transition-colors">
-                  Купить за 1 500 ₽
+                  Подключить
                 </button>
               </div>
 
-              {/* Файлы */}
+              {/* Отчёт о пропущенных */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
@@ -452,7 +452,7 @@ export function ServicesPage() {
                   </div>
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-base font-semibold text-gray-900">Файлы</h3>
+                      <h3 className="text-base font-semibold text-gray-900">Отчёт о пропущенных</h3>
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
                         <CheckCircle2 className="w-3 h-3" />
                         Подключено
@@ -462,7 +462,7 @@ export function ServicesPage() {
                   </div>
                 </div>
                 <button className="px-4 py-2 bg-gray-900 text-white text-[13px] font-medium rounded-lg hover:bg-gray-800 transition-colors">
-                  Купить за 1 500 ₽
+                  Подключить
                 </button>
               </div>
             </div>
